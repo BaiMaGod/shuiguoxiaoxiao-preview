@@ -1,5 +1,5 @@
 window.GAME_CONFIG = Object.freeze({
-  version: "2.0.2",
+  version: "2.0.3",
   width: 390,
   height: 844,
   level: 5,
@@ -47,9 +47,14 @@ window.GAME_CONFIG = Object.freeze({
     hitScale: 1.32,
     blockedCoverRatio: 0.20
   },
+  chute: {
+    captureY: 605,
+    captureXMin: 156,
+    captureXMax: 234
+  },
   tray: {
     capacity: 4,
-    y: 751,
+    y: 692,
     slots: [165,185,205,225],
     flyDuration: 240,
     clearDuration: 340,
