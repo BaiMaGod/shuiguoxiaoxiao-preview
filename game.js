@@ -351,16 +351,22 @@
     });
 
     burst(p.x, p.y, fruit.type, 7);
+    updateHud();
     ping(610, .045, .03);
   }
 
   function findTrayPair() {
-    for (let i = 0; i < tray.length; i++) {
-      if (tray[i].state !== TRAY_STATE.IDLE) continue;
-      for (let j = i + 1; j < tray.length; j++) {
-        if (tray[j].state === TRAY_STATE.IDLE && tray[i].type === tray[j].type) {
-          return [tray[i], tray[j]];
-        }
+    // 4 槽二消：只有相邻两个相同水果才消除。
+    // 这样槽位顺序本身才有策略意义。
+    for (let i = 0; i < tray.length - 1; i++) {
+      const a = tray[i];
+      const b = tray[i + 1];
+      if (
+        a.state === TRAY_STATE.IDLE &&
+        b.state === TRAY_STATE.IDLE &&
+        a.type === b.type
+      ) {
+        return [a, b];
       }
     }
     return null;
@@ -472,7 +478,14 @@
     for (const fruit of fruits) {
       if (fruit.state !== FRUIT_STATE.FALLING) continue;
       const p = fruit.body.position;
-      if (p.y > 694 && p.x > 151 && p.x < 239 && tray.length < C.tray.capacity) {
+      if (
+        p.y > C.chute.captureY &&
+        p.x > C.chute.captureXMin &&
+        p.x < C.chute.captureXMax &&
+        tray.length < C.tray.capacity
+      ) {
+        // 水果一进入中央收集口，就由物理世界切换到槽位动画。
+        // 不再要求它穿完整条狭窄通道，避免两个水果在入口互相卡死。
         collectFruit(fruit);
       } else if (p.y > H + 80) {
         Body.setPosition(fruit.body, { x:W/2 + (Math.random() - .5) * 24, y:620 });
@@ -594,15 +607,15 @@
   }
 
   function drawChute() {
-    const g = ctx.createLinearGradient(0,620,0,820);
+    const g = ctx.createLinearGradient(0,620,0,735);
     g.addColorStop(0,'#7b4b22');
     g.addColorStop(1,'#d6933f');
     ctx.fillStyle = g;
-    ctx.fillRect(158,620,74,224);
+    ctx.fillRect(158,620,74,115);
 
     ctx.strokeStyle = 'rgba(112,67,32,.55)';
     ctx.lineWidth = 2;
-    for (let y = 632; y < 820; y += 22) {
+    for (let y = 632; y < 735; y += 22) {
       ctx.beginPath(); ctx.moveTo(158,y); ctx.lineTo(232,y); ctx.stroke();
     }
   }
@@ -618,11 +631,11 @@
       ctx.shadowBlur = 14;
     }
 
-    roundRect(147,731,96,45,13,'#e8b46c','#805028',4);
-    roundRect(153,737,84,31,10,'#8a5d39','#654127',2);
+    roundRect(147,670,96,45,13,'#e8b46c','#805028',4);
+    roundRect(153,676,84,31,10,'#8a5d39','#654127',2);
 
     C.tray.slots.forEach(x => {
-      const slotG = ctx.createRadialGradient(x-2,748,1,x,C.tray.y,13);
+      const slotG = ctx.createRadialGradient(x-2,C.tray.y-4,1,x,C.tray.y,13);
       slotG.addColorStop(0,'rgba(255,241,191,.30)');
       slotG.addColorStop(1,'rgba(61,38,26,.36)');
       ctx.fillStyle = slotG;
