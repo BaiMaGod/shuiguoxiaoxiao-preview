@@ -218,11 +218,14 @@
     if (!item || gameEnded || item.state !== FRUIT_STATE.BOARD) return;
 
     item.state = FRUIT_STATE.FALLING;
+    item.renderOrder = nextRenderOrder++;
     item.visual.pressStart = performance.now();
     item.lastMoveTime = performance.now();
     item.lastX = item.body.position.x;
     item.lastY = item.body.position.y;
     Body.setStatic(item.body, false);
+    if (Sleeping && Sleeping.set) Sleeping.set(item.body, false);
+    Body.setVelocity(item.body, { x:0, y:0 });
     Body.setAngularVelocity(item.body, (Math.random() - .5) * .035);
 
     if (kick) {
@@ -878,10 +881,18 @@
     ctx.clearRect(0,0,W,H);
     drawBackground();
 
-    fruits
-      .filter(f => f.state === FRUIT_STATE.BOARD || f.state === FRUIT_STATE.FALLING)
-      .sort((a,b) => a.renderOrder - b.renderOrder)
-      .forEach(f => drawBoardFruit(f, now));
+    const boardFruits = fruits
+      .filter(f => f.state === FRUIT_STATE.BOARD)
+      .sort((a,b) => a.renderOrder - b.renderOrder);
+
+    const fallingFruits = fruits
+      .filter(f => f.state === FRUIT_STATE.FALLING)
+      .sort((a,b) => a.renderOrder - b.renderOrder);
+
+    // 关键：正在掉落的水果必须位于独立动态层。
+    // 否则它会被后创建的静态水果覆盖，看起来像“点击后直接消失”。
+    boardFruits.forEach(f => drawBoardFruit(f, now));
+    fallingFruits.forEach(f => drawBoardFruit(f, now));
 
     drawTrayBase(now);
     drawTrayItems();
