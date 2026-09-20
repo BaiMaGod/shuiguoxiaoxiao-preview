@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#56baf0" />
+  <title>水果消消 V2</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main id="app" aria-label="水果物理掉落二消小游戏">
+    <canvas id="game" width="390" height="844"></canvas>
+
+    <div class="hud hud-top">
+      <button class="icon-btn" id="settingsBtn" aria-label="设置">⚙</button>
+      <div class="level" id="levelLabel">第5关</div>
+      <div class="top-actions">
+        <button class="glass-btn" id="hintBtn" aria-label="提示">☝</button>
+        <button class="glass-btn dots" id="menuBtn" aria-label="更多">•••</button>
+      </div>
+    </div>
+
+    <div class="hud hud-bottom">
+      <div class="remain-panel">剩余 <strong id="remainCount">56</strong></div>
+      <div class="progress-panel">
+        <span class="avocado">🥑</span>
+        <strong id="progressText">0%</strong>
+      </div>
+      <button class="round-power" id="shakeBtn" aria-label="震动">📳<small>震动</small></button>
+      <button class="power power-left" id="removeBtn"><span>💡</span><b>消除</b></button>
+      <button class="power power-right" id="shuffleBtn"><span>🔄</span><b>打乱</b></button>
+      <button class="video-btn" id="unlockBtn" aria-label="解锁">▶<small>解锁</small></button>
+    </div>
+
+    <section class="overlay hidden" id="resultOverlay" aria-live="polite">
+      <div class="result-card">
+        <div class="result-emoji" id="resultEmoji">🎉</div>
+        <h1 id="resultTitle">过关啦！</h1>
+        <p id="resultDesc">所有水果都成功配对消除了。</p>
+        <button id="restartBtn">再来一局</button>
+      </div>
+    </section>
+
+    <section class="loading-overlay" id="loadingOverlay" aria-live="polite">
+      <div class="loading-fruit">🍓</div>
+      <b>水果装箱中…</b>
+    </section>
+
+    <div class="toast" id="toast"></div>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="assets.js"></script>
+  <script src="vendor/matter.min.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
