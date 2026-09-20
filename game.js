@@ -100,14 +100,16 @@
     add(Bodies.rectangle(-12, 330, 24, 700, { isStatic:true, friction:.4 }));
     add(Bodies.rectangle(W + 12, 330, 24, 700, { isStatic:true, friction:.4 }));
 
-    add(Bodies.rectangle(88, 585, 190, 20, {
+    // 物理斜坡必须和画面斜坡重合。
+    // 内端约为 x=151 / x=239，给中央收集口留下约 88px 的真实开口。
+    add(Bodies.rectangle(72, 584.5, 176, 20, {
       isStatic:true,
       angle:C.physics.rampAngle,
       friction:C.physics.rampFriction,
       restitution:0.02
     }));
 
-    add(Bodies.rectangle(302, 585, 190, 20, {
+    add(Bodies.rectangle(318, 584.5, 176, 20, {
       isStatic:true,
       angle:-C.physics.rampAngle,
       friction:C.physics.rampFriction,
