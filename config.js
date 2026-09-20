@@ -1,5 +1,5 @@
 window.GAME_CONFIG = Object.freeze({
-  version: "2.0.3",
+  version: "2.0.4",
   width: 390,
   height: 844,
   level: 5,
@@ -32,7 +32,7 @@ window.GAME_CONFIG = Object.freeze({
     density: 0.0018,
     sleepThreshold: 45,
     rampFriction: 0.06,
-    rampAngle: 0.415
+    rampAngle: 0.431
   },
   board: {
     rows: 8,
@@ -48,9 +48,9 @@ window.GAME_CONFIG = Object.freeze({
     blockedCoverRatio: 0.20
   },
   chute: {
-    captureY: 605,
-    captureXMin: 156,
-    captureXMax: 234
+    captureY: 598,
+    captureXMin: 154,
+    captureXMax: 236
   },
   tray: {
     capacity: 4,
