@@ -1,5 +1,5 @@
 window.GAME_CONFIG = Object.freeze({
-  version: "2.0.0",
+  version: "2.0.1",
   width: 390,
   height: 844,
   level: 5,
