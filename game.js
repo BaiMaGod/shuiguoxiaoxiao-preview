@@ -181,14 +181,18 @@
   function createFruit(type, x, y) {
     const meta = fruitMeta(type);
     const radius = meta.radius + (Math.random() - .5) * .9;
+    // 不能直接用 { isStatic:true } 创建后再解除静态。
+    // Matter.js 0.20 在这种路径下没有可恢复的有限质量/惯量，
+    // Body.setStatic(false) 后会导致物理位置变成 NaN。
+    // 正确做法：先创建正常动态刚体，再切成 static，让 Matter 保存原始物理属性。
     const body = Bodies.circle(x, y, radius, {
-      isStatic:true,
       restitution:C.physics.restitution,
       friction:C.physics.friction,
       frictionStatic:C.physics.frictionStatic,
       density:C.physics.density,
       sleepThreshold:C.physics.sleepThreshold
     });
+    Body.setStatic(body, true);
 
     const item = {
       id: nextFruitId++,
