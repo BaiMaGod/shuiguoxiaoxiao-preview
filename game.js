@@ -116,19 +116,9 @@
       restitution:0.02
     }));
 
-    add(Bodies.rectangle(153, 665, 13, 142, {
-      isStatic:true,
-      angle:-0.02,
-      friction:0.03,
-      restitution:0
-    }));
-
-    add(Bodies.rectangle(237, 665, 13, 142, {
-      isStatic:true,
-      angle:0.02,
-      friction:0.03,
-      restitution:0
-    }));
+    // 不在中央收集口放竖直物理墙。
+    // 旧实现的两根墙会挡住斜坡末端，导致水果在入口永久卡死。
+    // 水果进入漏斗口后直接切换到槽位动画，因此这里只保留视觉通道。
 
     add(Bodies.rectangle(W / 2, 760, 92, 12, {
       isStatic:true,
