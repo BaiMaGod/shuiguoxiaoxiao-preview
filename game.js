@@ -100,21 +100,34 @@
     add(Bodies.rectangle(-12, 330, 24, 700, { isStatic:true, friction:.4 }));
     add(Bodies.rectangle(W + 12, 330, 24, 700, { isStatic:true, friction:.4 }));
 
-    // 物理斜坡必须和画面斜坡重合。
-    // 内端约为 x=151 / x=239，给中央收集口留下约 88px 的真实开口。
-    add(Bodies.rectangle(72, 584.5, 176, 20, {
-      isStatic:true,
-      angle:C.physics.rampAngle,
-      friction:C.physics.rampFriction,
-      restitution:0.02
-    }));
+    const leftRamp = C.geometry.leftRamp;
+    const rightRamp = C.geometry.rightRamp;
 
-    add(Bodies.rectangle(318, 584.5, 176, 20, {
-      isStatic:true,
-      angle:-C.physics.rampAngle,
-      friction:C.physics.rampFriction,
-      restitution:0.02
-    }));
+    add(Bodies.rectangle(
+      leftRamp.x,
+      leftRamp.y,
+      leftRamp.length,
+      leftRamp.thickness,
+      {
+        isStatic:true,
+        angle:leftRamp.angle,
+        friction:C.physics.rampFriction,
+        restitution:0.02
+      }
+    ));
+
+    add(Bodies.rectangle(
+      rightRamp.x,
+      rightRamp.y,
+      rightRamp.length,
+      rightRamp.thickness,
+      {
+        isStatic:true,
+        angle:rightRamp.angle,
+        friction:C.physics.rampFriction,
+        restitution:0.02
+      }
+    ));
 
     // 不在中央收集口放竖直物理墙。
     // 旧实现的两根墙会挡住斜坡末端，导致水果在入口永久卡死。
@@ -144,6 +157,7 @@
     nextFruitId = 1;
     nextRenderOrder = 1;
     ui.overlay.classList.add('hidden');
+    if (window.GameEffects && GameEffects.reset) GameEffects.reset();
 
     const types = [];
     C.fruitTypes.forEach(type => {
@@ -438,7 +452,16 @@
         const eased = item.state === TRAY_STATE.FLYING ? easeOutBack(t) : easeOutCubic(t);
         item.x = lerp(item.fromX, item.targetX, eased);
         item.y = lerp(item.fromY, item.targetY, eased);
-        item.scale = item.state === TRAY_STATE.FLYING ? lerp(1.28, 1, t) : 1;
+
+        if (item.state === TRAY_STATE.FLYING) {
+          if (t < .65) {
+            item.scale = lerp(1.16, .95, t / .65);
+          } else {
+            item.scale = 1 + Math.sin(((t - .65) / .35) * Math.PI) * .12;
+          }
+        } else {
+          item.scale = 1;
+        }
         if (t >= 1) {
           item.x = item.targetX;
           item.y = item.targetY;
@@ -451,6 +474,11 @@
         const t = clamp01((now - item.clearStart) / C.tray.clearDuration);
         item.scale = 1 + Math.sin(t * Math.PI) * .28;
         item.alpha = 1 - Math.max(0, (t - .42) / .58);
+
+        if (activePair && activePair.length === 2) {
+          const centerX = (activePair[0].targetX + activePair[1].targetX) / 2;
+          item.x = lerp(item.targetX, centerX, Math.sin(t * Math.PI) * .18);
+        }
       }
     }
 
@@ -471,9 +499,9 @@
       if (fruit.state !== FRUIT_STATE.FALLING) continue;
       const p = fruit.body.position;
       if (
-        p.y > C.chute.captureY &&
-        p.x > C.chute.captureXMin &&
-        p.x < C.chute.captureXMax &&
+        p.y > C.geometry.chute.captureY &&
+        p.x > C.geometry.chute.xMin &&
+        p.x < C.geometry.chute.xMax &&
         tray.length < C.tray.capacity
       ) {
         // 水果一进入中央收集口，就由物理世界切换到槽位动画。
@@ -679,6 +707,12 @@
       ctx.shadowBlur = 12;
     }
 
+    ctx.shadowColor = fruit.state === FRUIT_STATE.FALLING
+      ? 'rgba(38,65,48,.34)'
+      : 'rgba(38,65,48,.24)';
+    ctx.shadowBlur = fruit.state === FRUIT_STATE.FALLING ? 7 : 4;
+    ctx.shadowOffsetY = fruit.state === FRUIT_STATE.FALLING ? 5 : 3;
+
     drawSprite(fruit.type, fruit.visualRadius, fruit.visual.alpha);
     ctx.restore();
 
@@ -804,11 +838,11 @@
   document.getElementById('restartBtn').addEventListener('click', buildLevel);
 
   document.getElementById('settingsBtn').addEventListener('click', () => {
-    showToast('V2：音效已开启');
+    showToast('V2.1：音效已开启');
   });
 
   document.getElementById('menuBtn').addEventListener('click', () => {
-    showToast('第5关 · 物理掉落二消 V2');
+    showToast('第5关 · 果园物理二消 V2.1');
   });
 
   document.getElementById('hintBtn').addEventListener('click', () => {
@@ -888,7 +922,9 @@
   function render(now) {
     ctx.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);
     ctx.clearRect(0,0,W,H);
-    drawBackground();
+
+    GameRenderer.drawBackground(ctx);
+    GameRenderer.drawStructures(ctx);
 
     const boardFruits = fruits
       .filter(f => f.state === FRUIT_STATE.BOARD)
@@ -898,14 +934,18 @@
       .filter(f => f.state === FRUIT_STATE.FALLING)
       .sort((a,b) => a.renderOrder - b.renderOrder);
 
-    // 关键：正在掉落的水果必须位于独立动态层。
-    // 否则它会被后创建的静态水果覆盖，看起来像“点击后直接消失”。
     boardFruits.forEach(f => drawBoardFruit(f, now));
     fallingFruits.forEach(f => drawBoardFruit(f, now));
 
-    drawTrayBase(now);
+    const progress = Math.round((clearedCount / Math.max(1,total)) * 100);
+    GameRenderer.drawHud(ctx, remainingCount(), progress, C.level);
+    GameRenderer.drawBottomDecor(ctx);
+    GameRenderer.drawTrayBase(ctx, now, trayDangerUntil);
+
     drawTrayItems();
-    drawParticles();
+    if (!DEBUG.disableParticles) drawParticles();
+    if (window.GameEffects) GameEffects.draw(ctx);
+    GameRenderer.drawDebug(ctx);
   }
 
   function frame(now) {
@@ -918,6 +958,7 @@
     checkStuckFruits(now);
     checkPendingGameOver(now);
     updateParticles(dt);
+    if (window.GameEffects) GameEffects.update(dt, now);
     render(now);
     requestAnimationFrame(frame);
   }

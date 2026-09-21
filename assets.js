@@ -10,13 +10,15 @@
   }
 
   function shine() {
-    return '<ellipse cx="45" cy="43" rx="10" ry="17" fill="#fff" opacity=".38" transform="rotate(28 45 43)"/>';
+    return '<ellipse cx="44" cy="42" rx="10" ry="18" fill="#fff" opacity=".46" transform="rotate(28 44 42)"/>' +
+           '<ellipse cx="51" cy="31" rx="4" ry="7" fill="#fff" opacity=".22" transform="rotate(28 51 31)"/>' +
+           '<ellipse cx="80" cy="89" rx="18" ry="10" fill="#4b2f1b" opacity=".08" transform="rotate(-18 80 89)"/>';
   }
 
   function wrap(body, extra = "") {
     return '<svg xmlns="' + NS + '" width="128" height="128" viewBox="0 0 128 128">' +
-      '<defs><filter id="s" x="-30%" y="-30%" width="160%" height="170%">' +
-      '<feDropShadow dx="0" dy="5" stdDeviation="3" flood-color="#143b31" flood-opacity=".24"/></filter></defs>' +
+      '<defs><filter id="s" x="-35%" y="-35%" width="170%" height="180%">' +
+      '<feDropShadow dx="0" dy="5" stdDeviation="3.5" flood-color="#173d31" flood-opacity=".28"/></filter></defs>' +
       '<g filter="url(#s)">' + body + extra + '</g></svg>';
   }
 

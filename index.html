@@ -3,37 +3,53 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#56baf0" />
-  <title>水果消消 V2</title>
-  <link rel="stylesheet" href="styles.css?v=2.0.5" />
+  <meta name="theme-color" content="#42aef2" />
+  <title>水果消消 V2.1</title>
+  <link rel="stylesheet" href="styles.css?v=2.1.0" />
 </head>
 <body>
   <main id="app" aria-label="水果物理掉落二消小游戏">
     <canvas id="game" width="390" height="844"></canvas>
 
     <div class="hud hud-top">
-      <button class="icon-btn" id="settingsBtn" aria-label="设置">⚙</button>
-      <div class="level" id="levelLabel">第5关</div>
-      <div class="top-actions">
-        <button class="glass-btn" id="hintBtn" aria-label="提示">☝</button>
-        <button class="glass-btn dots" id="menuBtn" aria-label="更多">•••</button>
-      </div>
+      <button class="top-btn settings" id="settingsBtn" aria-label="设置"><span>⚙</span></button>
+      <button class="top-btn hint" id="hintBtn" aria-label="提示"><span>☝</span></button>
+      <button class="top-btn menu" id="menuBtn" aria-label="更多"><span>•••</span></button>
     </div>
 
-    <div class="hud hud-bottom">
-      <div class="remain-panel">剩余 <strong id="remainCount">56</strong></div>
-      <div class="progress-panel">
-        <span class="avocado">🥑</span>
-        <strong id="progressText">0%</strong>
-      </div>
-      <button class="round-power" id="shakeBtn" aria-label="震动">📳<small>震动</small></button>
-      <button class="power power-left" id="removeBtn"><span>💡</span><b>消除</b></button>
-      <button class="power power-right" id="shuffleBtn"><span>🔄</span><b>打乱</b></button>
-      <button class="video-btn" id="unlockBtn" aria-label="解锁">▶<small>解锁</small></button>
+    <div class="sr-only" aria-live="polite">
+      <span id="levelLabel">第5关</span>
+      <span id="remainCount">56</span>
+      <span id="progressText">0%</span>
+    </div>
+
+    <div class="power-bar">
+      <button class="power-btn green" id="removeBtn" aria-label="消除">
+        <span class="power-icon">💡</span>
+        <b>消除</b>
+        <i class="power-count">3</i>
+      </button>
+
+      <button class="power-btn gold unlock" id="unlockBtn" aria-label="解锁">
+        <span class="power-icon play">▶</span>
+        <b>解锁</b>
+      </button>
+
+      <button class="power-btn green" id="shuffleBtn" aria-label="打乱">
+        <span class="power-icon">🔄</span>
+        <b>打乱</b>
+        <i class="power-count">3</i>
+      </button>
+
+      <button class="power-btn green shake" id="shakeBtn" aria-label="震动">
+        <span class="power-icon">📳</span>
+        <b>震动</b>
+      </button>
     </div>
 
     <section class="overlay hidden" id="resultOverlay" aria-live="polite">
       <div class="result-card">
+        <div class="result-leaves">🍃</div>
         <div class="result-emoji" id="resultEmoji">🎉</div>
         <h1 id="resultTitle">过关啦！</h1>
         <p id="resultDesc">所有水果都成功配对消除了。</p>
@@ -42,16 +58,20 @@
     </section>
 
     <section class="loading-overlay" id="loadingOverlay" aria-live="polite">
-      <div class="loading-fruit">🍓</div>
-      <b>水果装箱中…</b>
+      <div class="loading-box">
+        <div class="loading-fruit">🍓</div>
+      </div>
+      <b>正在装满果园…</b>
     </section>
 
     <div class="toast" id="toast"></div>
   </main>
 
-  <script src="config.js?v=2.0.5"></script>
-  <script src="assets.js?v=2.0.5"></script>
-  <script src="vendor/matter.min.js?v=2.0.5"></script>
-  <script src="game.js?v=2.0.5"></script>
+  <script src="config.js?v=2.1.0"></script>
+  <script src="assets.js?v=2.1.0"></script>
+  <script src="effects.js?v=2.1.0"></script>
+  <script src="renderer.js?v=2.1.0"></script>
+  <script src="vendor/matter.min.js?v=2.1.0"></script>
+  <script src="game.js?v=2.1.0"></script>
 </body>
 </html>
