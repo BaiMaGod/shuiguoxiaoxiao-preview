@@ -1,12 +1,41 @@
 window.GAME_CONFIG = Object.freeze({
-  version: "2.0.5",
+  version: "2.1.0",
   width: 390,
   height: 844,
   level: 5,
+
+  theme: {
+    skyTop: "#42aef2",
+    skyMiddle: "#73cef3",
+    skyBottom: "#dcf8fb",
+    cloud: "rgba(255,255,255,.72)",
+    grassLight: "#8bdb4b",
+    grassMid: "#5ab637",
+    grassDark: "#287f2b",
+    leafLight: "#7fd342",
+    leafDark: "#2f8e36",
+    woodLight: "#f1c574",
+    woodMid: "#cb8843",
+    woodDark: "#75431f",
+    woodEdge: "#5a3219",
+    stoneLight: "#f3d69a",
+    stoneDark: "#c99254",
+    panelLight: "#d7934b",
+    panelDark: "#70401f",
+    greenTop: "#63f04a",
+    greenBottom: "#22bd28",
+    greenStroke: "#118b1d",
+    goldTop: "#ffe560",
+    goldBottom: "#f1a221",
+    white: "#fffdf2",
+    ink: "#65401f"
+  },
+
   fruitTypes: [
     "tomato","orange","apple","blueberry","lemon","kiwi","watermelon",
     "grape","strawberry","durian","dragon","mango","peach","persimmon"
   ],
+
   fruitMeta: {
     tomato:     { c:"#ef3f37", c2:"#ff7a66", radius:19.2, visual:24.0 },
     orange:     { c:"#ff9617", c2:"#ffc642", radius:19.5, visual:23.8 },
@@ -23,6 +52,7 @@ window.GAME_CONFIG = Object.freeze({
     peach:      { c:"#f6817d", c2:"#ffc6aa", radius:19.3, visual:24.0 },
     persimmon:  { c:"#f07a1e", c2:"#ffb83d", radius:19.5, visual:24.0 }
   },
+
   physics: {
     gravityY: 1,
     gravityScale: 0.00165,
@@ -31,9 +61,15 @@ window.GAME_CONFIG = Object.freeze({
     frictionStatic: 0.22,
     density: 0.0018,
     sleepThreshold: 45,
-    rampFriction: 0.06,
-    rampAngle: 0.431
+    rampFriction: 0.06
   },
+
+  geometry: {
+    leftRamp:  { x:72,  y:584.5, length:176, thickness:20, angle:0.431 },
+    rightRamp: { x:318, y:584.5, length:176, thickness:20, angle:-0.431 },
+    chute: { captureY:590, xMin:145, xMax:245 }
+  },
+
   board: {
     rows: 8,
     cols: 7,
@@ -47,24 +83,32 @@ window.GAME_CONFIG = Object.freeze({
     hitScale: 1.32,
     blockedCoverRatio: 0.20
   },
-  chute: {
-    captureY: 590,
-    captureXMin: 145,
-    captureXMax: 245
-  },
+
   tray: {
     capacity: 4,
-    y: 692,
-    slots: [165,185,205,225],
-    flyDuration: 240,
-    clearDuration: 340,
-    slideDuration: 180
+    y: 690,
+    slots: [157,182,207,232],
+    flyDuration: 250,
+    clearDuration: 360,
+    slideDuration: 190
+  },
+
+  visual: {
+    levelSign: { x:195, y:65, w:156, h:58 },
+    remainPanel: { x:55, y:654, w:82, h:92 },
+    progressPanel: { x:335, y:654, w:82, h:92 },
+    tray: { x:195, y:690, w:118, h:60 },
+    grassY: 758
   }
 });
 
 window.DEBUG_GAME = Object.assign({
   showPhysicsBody: false,
   showClickableState: false,
+  showRampCollider: false,
+  showCaptureZone: false,
+  disableDecorations: false,
+  disableParticles: false,
   allFruitsClickable: false,
   disableGameOver: false
 }, window.DEBUG_GAME || {});
