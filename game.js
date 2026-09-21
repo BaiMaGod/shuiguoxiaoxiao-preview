@@ -838,11 +838,11 @@
   document.getElementById('restartBtn').addEventListener('click', buildLevel);
 
   document.getElementById('settingsBtn').addEventListener('click', () => {
-    showToast('V2.3：音效已开启');
+    showToast('V2.3.1：音效已开启');
   });
 
   document.getElementById('menuBtn').addEventListener('click', () => {
-    showToast('第5关 · 果园物理二消 V2.3');
+    showToast('第5关 · 果园物理二消 V2.3.1');
   });
 
   document.getElementById('hintBtn').addEventListener('click', () => {
