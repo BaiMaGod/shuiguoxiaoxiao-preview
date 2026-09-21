@@ -2,7 +2,7 @@
   "use strict";
 
   const C = window.GAME_CONFIG;
-  const BASE = "https://raw.githubusercontent.com/BaiMaGod/shuiguoxiaoxiao/main/assets/fruits/";
+  const BASE = "./assets/fruits/";
 
   function loadImage(src) {
     return new Promise(resolve => {
