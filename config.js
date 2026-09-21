@@ -1,5 +1,5 @@
 window.GAME_CONFIG = Object.freeze({
-  version: "2.2.0",
+  version: "2.3.0",
   width: 390,
   height: 844,
   level: 5,
@@ -32,9 +32,8 @@ window.GAME_CONFIG = Object.freeze({
   },
 
   fruitTypes: [
-    "apple","grape","blueberry","dragon",
-    "watermelon","lemon","kiwi","orange",
-    "strawberry","mango","peach","durian"
+    "apple","grape","blueberry","dragon","watermelon",
+    "lemon","kiwi","orange","strawberry","mango"
   ],
 
   fruitMeta: {

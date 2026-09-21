@@ -838,11 +838,11 @@
   document.getElementById('restartBtn').addEventListener('click', buildLevel);
 
   document.getElementById('settingsBtn').addEventListener('click', () => {
-    showToast('V2.1：音效已开启');
+    showToast('V2.3：音效已开启');
   });
 
   document.getElementById('menuBtn').addEventListener('click', () => {
-    showToast('第5关 · 果园物理二消 V2.1');
+    showToast('第5关 · 果园物理二消 V2.3');
   });
 
   document.getElementById('hintBtn').addEventListener('click', () => {
@@ -915,6 +915,8 @@
     const rect = canvas.getBoundingClientRect();
     canvas.width = Math.max(1, Math.round(rect.width * DPR));
     canvas.height = Math.max(1, Math.round(rect.height * DPR));
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
   }
 
   window.addEventListener('resize', resizeBackingStore);
