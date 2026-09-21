@@ -20,7 +20,7 @@
 
   const FRUIT_FILES = Object.freeze({
     apple: BASE + "apple.webp",
-    grape: BASE + "grape.webp",
+    grape: BASE + "grape.webp?v=20260921-plum1",
     blueberry: BASE + "blueberry.webp",
     dragon: BASE + "dragon.webp",
     watermelon: BASE + "watermelon.webp",
