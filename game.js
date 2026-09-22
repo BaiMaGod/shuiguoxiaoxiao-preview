@@ -756,6 +756,9 @@
   }
 
   function drawFallbackFruit(type, r) {
+    // A failed/transparent asset must never become a clickable invisible
+    // object. Keep recognisable cut-fruit fallbacks for the most important
+    // problem types and a bright generic fallback for everything else.
     if (type === 'apple') {
       const skin = ctx.createRadialGradient(-r*.28,-r*.32,1,0,0,r);
       skin.addColorStop(0,'#ff6b5f');
@@ -815,6 +818,7 @@
         ctx.restore();
       }
     } else if (type === 'grape') {
+      // grape is currently represented by the purple-skin plum artwork.
       ctx.fillStyle = '#6f2e9f';
       ctx.beginPath();
       ctx.arc(0,0,r*.96,0,Math.PI*2);
