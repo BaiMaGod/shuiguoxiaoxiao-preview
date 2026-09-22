@@ -46,6 +46,8 @@
       }
       return visible >= 20 && solid >= 8;
     } catch (err) {
+      // If pixel inspection is unavailable, keep the loaded image and let
+      // the renderer's fallback guard handle hard failures.
       console.warn("[assets] visibility probe skipped:", err);
       return true;
     }
