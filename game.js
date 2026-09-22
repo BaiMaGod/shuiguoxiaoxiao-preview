@@ -670,14 +670,28 @@
     ctx.restore();
   }
 
+  function isDrawableSprite(img) {
+    if (!img) return false;
+    const width = img.naturalWidth || img.width || 0;
+    const height = img.naturalHeight || img.height || 0;
+    return width > 0 && height > 0;
+  }
+
   function drawSprite(type, radius, alpha = 1) {
     const img = window.GameAssets && window.GameAssets.fruits[type];
     ctx.globalAlpha *= alpha;
-    if (img) {
-      ctx.drawImage(img, -radius, -radius, radius*2, radius*2);
-    } else {
-      drawFallbackFruit(type, radius);
+
+    if (isDrawableSprite(img)) {
+      try {
+        ctx.drawImage(img, -radius, -radius, radius*2, radius*2);
+        return;
+      } catch (err) {
+        // Never leave an interactive fruit invisible because one bitmap
+        // cannot be drawn. Fall through to a visible procedural sprite.
+      }
     }
+
+    drawFallbackFruit(type, radius);
   }
 
   function fruitVisualScale(fruit, now) {
@@ -742,21 +756,100 @@
   }
 
   function drawFallbackFruit(type, r) {
-    const m = fruitMeta(type);
-    const g = ctx.createRadialGradient(-r*.35,-r*.4,1,0,0,r);
-    g.addColorStop(0,m.c2);
-    g.addColorStop(1,m.c);
-    ctx.fillStyle = g;
-    ctx.strokeStyle = 'rgba(77,48,27,.45)';
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.arc(0,0,r*.92,0,Math.PI*2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,.4)';
-    ctx.beginPath();
-    ctx.ellipse(-r*.28,-r*.3,r*.16,r*.25,-.6,0,Math.PI*2);
-    ctx.fill();
+    if (type === 'apple') {
+      const skin = ctx.createRadialGradient(-r*.28,-r*.32,1,0,0,r);
+      skin.addColorStop(0,'#ff6b5f');
+      skin.addColorStop(1,'#c91f2e');
+      ctx.fillStyle = skin;
+      ctx.beginPath();
+      ctx.arc(0,0,r*.94,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle = '#fff1c8';
+      ctx.beginPath();
+      ctx.arc(0,0,r*.73,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle = '#704329';
+      [[-.16,-.05],[.16,.05]].forEach(([sx,sy]) => {
+        ctx.save();
+        ctx.translate(sx*r,sy*r);
+        ctx.rotate(sx < 0 ? -.45 : .45);
+        ctx.beginPath();
+        ctx.ellipse(0,0,r*.075,r*.15,0,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      ctx.fillStyle = '#54a63e';
+      ctx.beginPath();
+      ctx.ellipse(r*.20,-r*.92,r*.22,r*.10,-.45,0,Math.PI*2);
+      ctx.fill();
+    } else if (type === 'watermelon') {
+      ctx.fillStyle = '#2f9d3c';
+      ctx.beginPath();
+      ctx.arc(0,0,r*.96,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle = '#d8f2b7';
+      ctx.beginPath();
+      ctx.arc(0,0,r*.80,0,Math.PI*2);
+      ctx.fill();
+
+      const flesh = ctx.createRadialGradient(-r*.22,-r*.28,1,0,0,r*.72);
+      flesh.addColorStop(0,'#ff7777');
+      flesh.addColorStop(1,'#ef3447');
+      ctx.fillStyle = flesh;
+      ctx.beginPath();
+      ctx.arc(0,0,r*.69,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle = '#4b2d24';
+      for (const a of [-2.25,-1.05,.05,1.15,2.3]) {
+        ctx.save();
+        ctx.rotate(a);
+        ctx.translate(r*.36,0);
+        ctx.beginPath();
+        ctx.ellipse(0,0,r*.055,r*.11,0,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+    } else if (type === 'grape') {
+      ctx.fillStyle = '#6f2e9f';
+      ctx.beginPath();
+      ctx.arc(0,0,r*.96,0,Math.PI*2);
+      ctx.fill();
+
+      const flesh = ctx.createRadialGradient(-r*.2,-r*.2,1,0,0,r*.75);
+      flesh.addColorStop(0,'#ffe66f');
+      flesh.addColorStop(1,'#f39b2d');
+      ctx.fillStyle = flesh;
+      ctx.beginPath();
+      ctx.arc(0,0,r*.72,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle = '#8b4a2b';
+      ctx.beginPath();
+      ctx.ellipse(0,0,r*.15,r*.30,0,0,Math.PI*2);
+      ctx.fill();
+    } else {
+      const m = fruitMeta(type);
+      const g = ctx.createRadialGradient(-r*.35,-r*.4,1,0,0,r);
+      g.addColorStop(0,m.c2);
+      g.addColorStop(1,m.c);
+      ctx.fillStyle = g;
+      ctx.strokeStyle = 'rgba(77,48,27,.55)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(0,0,r*.92,0,Math.PI*2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(255,255,255,.48)';
+      ctx.beginPath();
+      ctx.ellipse(-r*.28,-r*.3,r*.16,r*.25,-.6,0,Math.PI*2);
+      ctx.fill();
+    }
   }
 
   function roundRect(x,y,w,h,r,fill,stroke,lw=1) {
@@ -838,11 +931,11 @@
   document.getElementById('restartBtn').addEventListener('click', buildLevel);
 
   document.getElementById('settingsBtn').addEventListener('click', () => {
-    showToast('V2.3.1：音效已开启');
+    showToast('V2.3.2：音效已开启');
   });
 
   document.getElementById('menuBtn').addEventListener('click', () => {
-    showToast('第5关 · 果园物理二消 V2.3.1');
+    showToast('第5关 · 果园物理二消 V2.3.2');
   });
 
   document.getElementById('hintBtn').addEventListener('click', () => {
