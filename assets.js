@@ -3,7 +3,7 @@
 
   const C = window.GAME_CONFIG;
   const BASE = "./assets/fruits/";
-  const ASSET_VERSION = "20260922-visible1";
+  const ASSET_VERSION = "20260923-fruit-final2";
 
   function fruitSrc(file) {
     return BASE + file + "?v=" + ASSET_VERSION;
