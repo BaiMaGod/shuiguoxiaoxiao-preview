@@ -56,6 +56,8 @@
   let trayDangerUntil = 0;
   let pendingLoseAt = 0;
   let lastTime = performance.now();
+  let boardShift = null;
+  let lastBoardShiftAt = 0;
 
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -85,6 +87,36 @@
 
   function fruitMeta(type) {
     return C.fruitMeta[type] || C.fruitMeta.orange;
+  }
+
+  function getLevelFruitCount(level) {
+    const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+    const fixed = C.board.fruitCountByLevel || [];
+    let count = fixed[safeLevel];
+
+    if (!Number.isFinite(count)) {
+      const base = fixed[5] || fixed[fixed.length - 1] || 80;
+      count = base + Math.max(0, safeLevel - 5) * (C.board.fruitGrowthAfter5 || 8);
+    }
+
+    count = Math.min(C.board.maxFruitCount || 96, Math.max(2, Math.floor(count)));
+    if (count % 2 !== 0) count -= 1;
+    return count;
+  }
+
+  function getBoardLayout(level, totalCount) {
+    const dense = Number(level) >= 2;
+    const cols = C.board.cols;
+    const rows = Math.ceil(totalCount / cols);
+    return {
+      dense,
+      cols,
+      rows,
+      bottomY: dense ? C.board.denseBottomY : C.board.level1BottomY,
+      spacingX: dense ? C.board.denseSpacingX : C.board.level1SpacingX,
+      spacingY: dense ? C.board.denseSpacingY : C.board.level1SpacingY,
+      staggerX: dense ? C.board.denseStaggerX : C.board.level1StaggerX
+    };
   }
 
   function setupBoundaries() {
@@ -156,27 +188,40 @@
     gameEnded = false;
     nextFruitId = 1;
     nextRenderOrder = 1;
+    boardShift = null;
+    lastBoardShiftAt = 0;
     ui.overlay.classList.add('hidden');
     if (window.GameEffects && GameEffects.reset) GameEffects.reset();
 
+    const targetCount = getLevelFruitCount(C.level);
     const types = [];
-    C.fruitTypes.forEach(type => {
-      for (let i = 0; i < 4; i++) types.push(type);
-    });
+    const pairCount = targetCount / 2;
+
+    // 按“水果对”生成，而不是单纯随机单颗生成，避免高数量关卡出现奇数残单。
+    for (let i = 0; i < pairCount; i++) {
+      const type = C.fruitTypes[i % C.fruitTypes.length];
+      types.push(type, type);
+    }
     shuffle(types);
     total = types.length;
 
+    const layout = getBoardLayout(C.level, total);
     let index = 0;
-    for (let row = 0; row < C.board.rows; row++) {
-      for (let col = 0; col < C.board.cols; col++) {
+    for (let row = 0; row < layout.rows; row++) {
+      for (let col = 0; col < layout.cols; col++) {
         if (index >= types.length) break;
-        const stagger = row % 2 ? C.board.staggerX : 0;
-        const baseX = C.board.startX + col * C.board.spacingX + stagger;
+
+        const stagger = row % 2 ? layout.staggerX : 0;
+        const baseX = C.board.startX + col * layout.spacingX + stagger;
         const x = Math.min(
           W - 27,
           Math.max(27, baseX + (Math.random() - .5) * C.board.randomX)
         );
-        const y = C.board.startY + row * C.board.spacingY + (Math.random() - .5) * C.board.randomY;
+
+        // 从“最下方锚点”向上排布。第 2 关起水果更多、更密，
+        // 高关卡的最上方若超出屏幕，会作为储备层在后续下压时进入画面。
+        const baseY = layout.bottomY - (layout.rows - 1 - row) * layout.spacingY;
+        const y = baseY + (Math.random() - .5) * C.board.randomY;
         createFruit(types[index++], x, y);
       }
     }
@@ -491,6 +536,55 @@
     }
 
     if (becameStable && trayIsStable()) resolveTray();
+  }
+
+  function startBoardShift(now) {
+    if (Number(C.level) < 2 || boardShift || gameEnded) return;
+    if (now - lastBoardShiftAt < C.board.scrollCooldown) return;
+
+    const still = fruits.filter(f => f.state === FRUIT_STATE.BOARD && f.body);
+    if (!still.length) return;
+
+    const lowestY = Math.max(...still.map(f => f.body.position.y));
+    if (lowestY >= C.board.scrollTriggerY) return;
+
+    const dy = C.board.scrollTargetY - lowestY;
+    if (dy <= 1) return;
+
+    boardShift = {
+      start: now,
+      duration: C.board.scrollDuration,
+      items: still.map(f => ({
+        fruit: f,
+        fromX: f.body.position.x,
+        fromY: f.body.position.y,
+        toY: f.body.position.y + dy
+      }))
+    };
+    lastBoardShiftAt = now;
+  }
+
+  function updateBoardShift(now) {
+    if (!boardShift) {
+      startBoardShift(now);
+      return;
+    }
+
+    const t = clamp01((now - boardShift.start) / boardShift.duration);
+    const eased = easeOutCubic(t);
+
+    boardShift.items.forEach(item => {
+      const fruit = item.fruit;
+      if (!fruit || fruit.state !== FRUIT_STATE.BOARD || !fruit.body) return;
+      Body.setPosition(fruit.body, {
+        x: item.fromX,
+        y: lerp(item.fromY, item.toY, eased)
+      });
+    });
+
+    if (t >= 1) {
+      boardShift = null;
+    }
   }
 
   function checkFruitCollection() {
@@ -1052,6 +1146,7 @@
     lastTime = now;
 
     if (!gameEnded) Engine.update(engine, dt);
+    updateBoardShift(now);
     checkFruitCollection();
     updateTrayAnimations(now);
     checkStuckFruits(now);
