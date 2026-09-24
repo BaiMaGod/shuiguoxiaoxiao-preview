@@ -71,17 +71,35 @@ window.GAME_CONFIG = Object.freeze({
   },
 
   board: {
-    rows: 8,
     cols: 7,
     startX: 31,
-    startY: 116,
-    spacingX: 51,
-    spacingY: 48,
-    staggerX: 24,
-    randomX: 8,
-    randomY: 7,
+
+    // 第 1 关保留较疏的教学布局；第 2 关起进入高密度布局。
+    level1BottomY: 355,
+    level1SpacingX: 51,
+    level1SpacingY: 48,
+    level1StaggerX: 24,
+
+    denseBottomY: 470,
+    denseSpacingX: 49,
+    denseSpacingY: 42,
+    denseStaggerX: 23,
+
+    randomX: 6,
+    randomY: 5,
     hitScale: 1.32,
-    blockedCoverRatio: 0.20
+    blockedCoverRatio: 0.20,
+
+    // 关卡水果总量：全部按“成对”生成，保证理论上可全部二消。
+    fruitCountByLevel: [0, 40, 56, 64, 72, 80],
+    fruitGrowthAfter5: 8,
+    maxFruitCount: 96,
+
+    // 当最下方未掉落水果进入上半屏时，整体下压，露出上方储备水果。
+    scrollTriggerY: 405,
+    scrollTargetY: 470,
+    scrollDuration: 380,
+    scrollCooldown: 550
   },
 
   tray: {
