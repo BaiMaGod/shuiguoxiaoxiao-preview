@@ -61,21 +61,20 @@ button {
 
 .top-btn {
   position:absolute;
-  top:max(17px, env(safe-area-inset-top));
-  width:48px;
-  height:48px;
-  border:2px solid rgba(255,255,255,.88);
-  border-radius:17px;
-  background:
-    linear-gradient(180deg,rgba(255,255,255,.96),rgba(216,240,255,.90));
-  color:#355f7d;
-  box-shadow:
-    inset 0 2px 2px rgba(255,255,255,.98),
-    0 5px 0 rgba(107,166,198,.42),
-    0 8px 15px rgba(40,89,117,.18);
+  top:max(14px, env(safe-area-inset-top));
+  width:52px;
+  height:52px;
+  border:0;
+  border-radius:18px;
+  background:rgba(255,255,255,.92);
+  color:#35617d;
+  box-shadow:0 6px 15px rgba(31,86,112,.20);
   z-index:8;
   cursor:pointer;
   transition:transform .08s ease, filter .08s ease;
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:cover;
 }
 .top-btn span {
   display:grid;
@@ -88,9 +87,15 @@ button {
   transform:translateY(3px) scale(.96);
   filter:brightness(.98);
 }
-.top-btn.settings { left:12px; }
+.top-btn.settings {
+  left:10px;
+  background-image:url("./assets/ui/settings.svg?v=20260925-ui-v1");
+  background-color:transparent;
+  box-shadow:none;
+}
+.top-btn.settings span { opacity:0; }
 .top-btn.hint { right:70px; }
-.top-btn.menu { right:12px; width:54px; }
+.top-btn.menu { right:10px; width:54px; }
 .top-btn.menu span {
   font-size:21px;
   letter-spacing:2px;
@@ -101,119 +106,46 @@ button {
   position:absolute;
   left:7px;
   right:7px;
-  bottom:max(9px, env(safe-area-inset-bottom));
-  height:70px;
+  bottom:max(7px, env(safe-area-inset-bottom));
+  height:78px;
   z-index:12;
   display:flex;
   align-items:flex-end;
   justify-content:center;
-  gap:5px;
+  gap:2px;
   pointer-events:none;
 }
 
 .power-btn {
   position:relative;
-  height:58px;
-  border:3px solid;
-  border-radius:28px;
-  color:#fff;
+  height:69px;
+  border:0;
   padding:0;
   pointer-events:auto;
   cursor:pointer;
-  box-shadow:
-    inset 0 3px 0 rgba(255,255,255,.52),
-    0 6px 0 rgba(9,106,24,.92),
-    0 9px 13px rgba(28,75,25,.22);
+  background-color:transparent !important;
+  background-repeat:no-repeat !important;
+  background-position:center !important;
+  background-size:100% 100% !important;
+  box-shadow:none !important;
+  color:transparent;
   transition:transform .08s ease,filter .08s ease;
 }
-.power-btn.green {
-  background:linear-gradient(180deg,#66f34d 0%,#37d337 55%,#1caf25 100%);
-  border-color:#148c21;
-}
-.power-btn.gold {
-  color:#754014;
-  background:linear-gradient(180deg,#fff17a 0%,#ffc63f 58%,#ed961d 100%);
-  border-color:#d98718;
-  box-shadow:
-    inset 0 3px 0 rgba(255,255,255,.62),
-    0 6px 0 #b86b14,
-    0 9px 13px rgba(96,57,16,.22);
-}
-#removeBtn,#shuffleBtn { width:92px; }
-#unlockBtn { width:69px; height:64px; border-radius:25px; }
-#shakeBtn { width:75px; }
+.power-btn.green,.power-btn.gold { border-color:transparent; }
+#removeBtn { width:92px; background-image:url("./assets/ui/remove.svg?v=20260925-ui-v1") !important; }
+#unlockBtn { width:69px; height:72px; background-image:url("./assets/ui/unlock.svg?v=20260925-ui-v1") !important; }
+#shuffleBtn { width:88px; background-image:url("./assets/ui/shuffle.svg?v=20260925-ui-v1") !important; }
+#shakeBtn { width:73px; background-image:url("./assets/ui/shake.svg?v=20260925-ui-v1") !important; }
 
 .power-btn:active {
-  transform:translateY(4px) scale(.97);
-  filter:brightness(.98);
+  transform:translateY(4px) scale(.96);
+  filter:brightness(.97);
 }
-.power-btn .power-icon {
-  position:absolute;
-  left:8px;
-  top:10px;
-  font-size:25px;
-  filter:drop-shadow(0 2px 1px rgba(48,89,31,.28));
-}
-.power-btn b {
-  display:block;
-  margin-left:27px;
-  font-size:17px;
-  font-weight:900;
-  line-height:55px;
-  white-space:nowrap;
-  text-shadow:0 2px 0 rgba(39,104,35,.44);
-}
-.power-btn.gold b {
-  margin-left:0;
-  padding-top:29px;
-  line-height:22px;
-  font-size:14px;
-  text-shadow:0 1px 0 rgba(255,244,176,.74);
-}
-.power-btn.gold .power-icon {
-  left:50%;
-  top:7px;
-  transform:translateX(-50%);
-  width:30px;
-  height:24px;
-  display:grid;
-  place-items:center;
-  border-radius:9px;
-  font-size:17px;
-  color:#84501f;
-  background:#fff8d4;
-  border:2px solid #bc7c24;
-  filter:none;
-}
-.power-btn.shake .power-icon {
-  left:50%;
-  top:5px;
-  transform:translateX(-50%);
-  font-size:25px;
-}
-.power-btn.shake b {
-  margin-left:0;
-  padding-top:24px;
-  line-height:27px;
-  text-align:center;
-  font-size:14px;
-}
+.power-btn .power-icon,
+.power-btn b,
 .power-count {
-  position:absolute;
-  right:-4px;
-  top:-9px;
-  width:23px;
-  height:23px;
-  border-radius:50%;
-  display:grid;
-  place-items:center;
-  font-style:normal;
-  font-size:13px;
-  font-weight:900;
-  background:linear-gradient(#ff5a51,#d91d24);
-  color:#fff;
-  border:2px solid #fff6e9;
-  box-shadow:0 2px 4px rgba(103,24,20,.25);
+  opacity:0;
+  pointer-events:none;
 }
 
 .overlay {
@@ -385,4 +317,65 @@ button {
 @media (max-height:700px) {
   .top-btn { top:max(10px,env(safe-area-inset-top)); }
   .power-bar { transform:scale(.94); transform-origin:center bottom; }
+}
+
+
+/* Garden UI art skin — 2026-09-24 */
+.top-btn.settings {
+  top:max(10px, env(safe-area-inset-top));
+  left:8px;
+  width:60px;
+  height:60px;
+  border:0;
+  border-radius:0;
+  background-color:transparent;
+  background-image:url("./assets/ui/ui-pack.webp?v=20260924-garden-ui1");
+  background-repeat:no-repeat;
+  background-size:352px 960px;
+  background-position:-190px -660px;
+  box-shadow:none;
+}
+.top-btn.settings span { opacity:0; }
+
+.power-bar {
+  left:12px;
+  right:12px;
+  bottom:max(8px, env(safe-area-inset-bottom));
+  height:66px;
+  gap:4px;
+}
+.power-btn,
+.power-btn.green,
+.power-btn.gold,
+#removeBtn,
+#unlockBtn,
+#shuffleBtn,
+#shakeBtn {
+  width:80px !important;
+  height:60px !important;
+  min-width:80px;
+  border:0 !important;
+  border-radius:0 !important;
+  padding:0 !important;
+  background-color:transparent !important;
+  background-image:url("./assets/ui/ui-pack.webp?v=20260924-garden-ui1") !important;
+  background-repeat:no-repeat !important;
+  background-size:352px 960px !important;
+  box-shadow:none !important;
+  overflow:visible;
+}
+#removeBtn  { background-position:0 -870px !important; }
+#unlockBtn  { background-position:-85px -870px !important; }
+#shuffleBtn { background-position:-170px -870px !important; }
+#shakeBtn   { background-position:-255px -870px !important; }
+
+.power-btn > * { opacity:0 !important; }
+.power-btn:active {
+  transform:translateY(3px) scale(.97);
+  filter:brightness(.94);
+}
+
+@media (max-height:700px) {
+  .top-btn.settings { top:max(6px,env(safe-area-inset-top)); }
+  .power-bar { transform:scale(.90); transform-origin:center bottom; }
 }
