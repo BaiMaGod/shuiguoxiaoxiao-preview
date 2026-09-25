@@ -2,24 +2,24 @@
   "use strict";
 
   const C = window.GAME_CONFIG;
-  const BASE = "./assets/fruits/";
-  const ASSET_VERSION = "20260923-fruit-final2";
+  const FRUIT_BASE = "./assets/fruits/";
+  const UI_BASE = "./assets/ui/";
+  const ASSET_VERSION = "20260925-ui-v1";
 
-  function fruitSrc(file) {
-    return BASE + file + "?v=" + ASSET_VERSION;
+  function src(base,file) {
+    return base + file + "?v=" + ASSET_VERSION;
   }
 
-  function loadImage(src) {
+  function loadImage(url) {
     return new Promise(resolve => {
       const img = new Image();
       img.decoding = "async";
-      img.crossOrigin = "anonymous";
       img.onload = () => resolve(img);
       img.onerror = () => {
-        console.warn("[assets] fruit image failed:", src);
+        console.warn("[assets] image failed:", url);
         resolve(null);
       };
-      img.src = src;
+      img.src = url;
     });
   }
 
@@ -46,50 +46,63 @@
       }
       return visible >= 20 && solid >= 8;
     } catch (err) {
-      // If pixel inspection is unavailable, keep the loaded image and let
-      // the renderer's fallback guard handle hard failures.
-      console.warn("[assets] visibility probe skipped:", err);
       return true;
     }
   }
 
   const FRUIT_FILES = Object.freeze({
-    apple: fruitSrc("apple.webp"),
-    grape: fruitSrc("grape.webp"),
-    blueberry: fruitSrc("blueberry.webp"),
-    dragon: fruitSrc("dragon.webp"),
-    watermelon: fruitSrc("watermelon.webp"),
-    lemon: fruitSrc("lemon.webp"),
-    kiwi: fruitSrc("kiwi.webp"),
-    orange: fruitSrc("orange.webp"),
-    strawberry: fruitSrc("strawberry.webp"),
-    mango: fruitSrc("mango.webp")
+    apple: src(FRUIT_BASE,"apple.webp"),
+    grape: src(FRUIT_BASE,"grape.webp"),
+    blueberry: src(FRUIT_BASE,"blueberry.webp"),
+    dragon: src(FRUIT_BASE,"dragon.webp"),
+    watermelon: src(FRUIT_BASE,"watermelon.webp"),
+    lemon: src(FRUIT_BASE,"lemon.webp"),
+    kiwi: src(FRUIT_BASE,"kiwi.webp"),
+    orange: src(FRUIT_BASE,"orange.webp"),
+    strawberry: src(FRUIT_BASE,"strawberry.webp"),
+    mango: src(FRUIT_BASE,"mango.webp")
+  });
+
+  const UI_FILES = Object.freeze({
+    background: src(UI_BASE,"background.svg"),
+    levelSign: src(UI_BASE,"level-sign.svg"),
+    settings: src(UI_BASE,"settings.svg"),
+    remainPanel: src(UI_BASE,"remain-panel.svg"),
+    progressPanel: src(UI_BASE,"progress-panel.svg"),
+    tray: src(UI_BASE,"tray.svg"),
+    remove: src(UI_BASE,"remove.svg"),
+    unlock: src(UI_BASE,"unlock.svg"),
+    shuffle: src(UI_BASE,"shuffle.svg"),
+    shake: src(UI_BASE,"shake.svg")
   });
 
   const GameAssets = {
     fruits: {},
+    ui: {},
     invalidTypes: new Set(),
+
     async load() {
       this.fruits = {};
+      this.ui = {};
       this.invalidTypes.clear();
 
-      await Promise.all(C.fruitTypes.map(async type => {
-        const src = FRUIT_FILES[type];
-        if (!src) {
+      const fruitJobs = C.fruitTypes.map(async type => {
+        const url = FRUIT_FILES[type];
+        if (!url) {
           this.invalidTypes.add(type);
-          console.warn("[assets] no fruit file mapping:", type);
           return;
         }
+        const img = await loadImage(url);
+        if (img && hasVisiblePixels(img)) this.fruits[type] = img;
+        else this.invalidTypes.add(type);
+      });
 
-        const img = await loadImage(src);
-        if (img && hasVisiblePixels(img)) {
-          this.fruits[type] = img;
-          return;
-        }
+      const uiJobs = Object.entries(UI_FILES).map(async ([key,url]) => {
+        const img = await loadImage(url);
+        if (img) this.ui[key] = img;
+      });
 
-        this.invalidTypes.add(type);
-        console.warn("[assets] invisible/invalid fruit sprite, fallback enabled:", type, src);
-      }));
+      await Promise.all([...fruitJobs,...uiJobs]);
 
       if (this.invalidTypes.size) {
         console.warn("[assets] fallback fruit types:", Array.from(this.invalidTypes));
