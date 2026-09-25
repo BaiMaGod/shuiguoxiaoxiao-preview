@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 92">
+<defs><linearGradient id="w" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f8be63"/><stop offset="1" stop-color="#a95a26"/></linearGradient><filter id="s"><feDropShadow dx="0" dy="5" stdDeviation="3" flood-color="#5b2b10" flood-opacity=".35"/></filter></defs>
+<g filter="url(#s)"><path d="M24 14h162q12 0 12 12v45q0 12-12 12H24Q12 83 12 71V26q0-12 12-12z" fill="url(#w)" stroke="#7a3c18" stroke-width="4"/>
+<path d="M27 32c25-7 45 5 68 0s45 5 75-1M31 58c28-5 46 6 72 0s49 4 67-2" fill="none" stroke="#8b4b22" opacity=".35"/>
+<g fill="#54b93f" stroke="#2b7f30"><ellipse cx="25" cy="18" rx="8" ry="15" transform="rotate(-43 25 18)"/><ellipse cx="38" cy="16" rx="8" ry="16" transform="rotate(30 38 16)"/><ellipse cx="184" cy="18" rx="8" ry="15" transform="rotate(43 184 18)"/><ellipse cx="171" cy="16" rx="8" ry="16" transform="rotate(-30 171 16)"/></g>
+<g fill="#fff"><circle cx="44" cy="23" r="7"/><circle cx="166" cy="23" r="7"/></g><g fill="#ffc51f"><circle cx="44" cy="23" r="2.5"/><circle cx="166" cy="23" r="2.5"/></g>
+<text x="105" y="61" text-anchor="middle" font-family="Arial Black,PingFang SC,Microsoft YaHei,sans-serif" font-size="38" font-weight="900" fill="#ffe36b" stroke="#7b3414" stroke-width="5" paint-order="stroke">第5关</text></g>
+</svg>
