@@ -4,7 +4,7 @@
   const C = window.GAME_CONFIG;
   const FRUIT_BASE = "./assets/fruits/";
   const UI_BASE = "./assets/ui/";
-  const ASSET_VERSION = "20260926-ui-v2";
+  const ASSET_VERSION = "20260926-art-v3";
 
   function src(base,file) {
     return base + file + "?v=" + ASSET_VERSION;
@@ -64,12 +64,12 @@
   });
 
   const UI_FILES = Object.freeze({
-    background: src(UI_BASE,"background.svg"),
-    levelSign: src(UI_BASE,"level-sign.svg"),
+    background: src(UI_BASE,"background.webp"),
+    levelSign: src(UI_BASE,"level-sign.webp"),
     settings: src(UI_BASE,"settings.svg"),
     remainPanel: src(UI_BASE,"remain-panel.svg"),
     progressPanel: src(UI_BASE,"progress-panel.svg"),
-    tray: src(UI_BASE,"tray.svg"),
+    tray: src(UI_BASE,"tray.webp"),
     remove: src(UI_BASE,"remove.svg"),
     unlock: src(UI_BASE,"unlock.svg"),
     shuffle: src(UI_BASE,"shuffle.svg"),

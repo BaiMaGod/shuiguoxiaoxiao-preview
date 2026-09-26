@@ -1,5 +1,5 @@
 window.GAME_CONFIG = Object.freeze({
-  version: "2.3.2",
+  version: "2.3.4",
   width: 390,
   height: 844,
   level: 5,
@@ -105,17 +105,17 @@ window.GAME_CONFIG = Object.freeze({
   tray: {
     capacity: 4,
     y: 690,
-    slots: [157,182,207,232],
+    slots: [142,176,210,244],
     flyDuration: 250,
     clearDuration: 360,
     slideDuration: 190
   },
 
   visual: {
-    levelSign: { x:195, y:65, w:156, h:58 },
-    remainPanel: { x:55, y:654, w:82, h:92 },
-    progressPanel: { x:335, y:654, w:82, h:92 },
-    tray: { x:195, y:690, w:118, h:60 },
+    levelSign: { x:195, y:60, w:180, h:60 },
+    remainPanel: { x:55, y:656, w:88, h:110 },
+    progressPanel: { x:335, y:656, w:88, h:110 },
+    tray: { x:195, y:688, w:184, h:147 },
     grassY: 758
   }
 });

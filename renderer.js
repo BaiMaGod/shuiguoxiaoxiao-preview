@@ -101,11 +101,11 @@
   function drawHud(ctx,remaining,progress,level) {
     const sign=ui("levelSign");
     if (sign) {
-      drawImageFit(ctx,sign,99,10,192,84);
+      drawImageFit(ctx,sign,85,8,220,73);
       if (Number(level)!==5) {
         // Cover the baked sample title and keep later levels dynamic.
-        rr(ctx,132,34,126,42,13,"rgba(173,92,38,.94)",null);
-        drawNumber(ctx,"第"+level+"关",195,55,28,"#ffe66f","#713312",5);
+        rr(ctx,130,31,130,40,12,"rgba(173,92,38,.96)",null);
+        drawNumber(ctx,"第"+level+"关",195,51,25,"#ffe66f","#713312",5);
       }
     } else {
       rr(ctx,118,26,154,60,18,"#bc7435","#703815",3);
@@ -141,7 +141,7 @@
     }
 
     if (tray) {
-      drawImageFit(ctx,tray,112,617,166,124);
+      drawImageFit(ctx,tray,103,600,184,147);
     } else {
       const box=C.visual.tray;
       const grad=ctx.createLinearGradient(0,box.y-box.h/2,0,box.y+box.h/2);
