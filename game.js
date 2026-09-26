@@ -1028,25 +1028,6 @@
 
   document.getElementById('restartBtn').addEventListener('click', buildLevel);
 
-  document.getElementById('settingsBtn').addEventListener('click', () => {
-    showToast('V2.3.2：音效已开启');
-  });
-
-  document.getElementById('menuBtn').addEventListener('click', () => {
-    showToast('第5关 · 果园物理二消 V2.3.2');
-  });
-
-  document.getElementById('hintBtn').addEventListener('click', () => {
-    const candidate = fruits
-      .filter(f => f.state === FRUIT_STATE.BOARD && isFruitExposed(f))
-      .sort((a,b) => b.body.position.y - a.body.position.y)[0];
-    if (candidate) {
-      candidate.visual.glowUntil = performance.now() + 1500;
-      showToast('这个水果现在可以点');
-      ping(720,.05,.025);
-    }
-  });
-
   document.getElementById('shakeBtn').addEventListener('click', () => {
     if (gameEnded) return;
     fruits.filter(f => f.state === FRUIT_STATE.FALLING).forEach(f => {
