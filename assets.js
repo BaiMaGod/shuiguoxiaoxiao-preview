@@ -4,7 +4,7 @@
   const C = window.GAME_CONFIG;
   const FRUIT_BASE = "./assets/fruits/";
   const UI_BASE = "./assets/ui/";
-  const ASSET_VERSION = "20260925-ui-v1";
+  const ASSET_VERSION = "20260926-ui-v2";
 
   function src(base,file) {
     return base + file + "?v=" + ASSET_VERSION;
