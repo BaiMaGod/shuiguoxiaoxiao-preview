@@ -89,7 +89,7 @@ button {
 }
 .top-btn.settings {
   left:10px;
-  background-image:url("./assets/ui/settings.svg?v=20260925-ui-v1");
+  background-image:url("./assets/ui/settings.svg?v=20260926-ui-v2");
   background-color:transparent;
   box-shadow:none;
 }
@@ -132,10 +132,10 @@ button {
   transition:transform .08s ease,filter .08s ease;
 }
 .power-btn.green,.power-btn.gold { border-color:transparent; }
-#removeBtn { width:92px; background-image:url("./assets/ui/remove.svg?v=20260925-ui-v1") !important; }
-#unlockBtn { width:69px; height:72px; background-image:url("./assets/ui/unlock.svg?v=20260925-ui-v1") !important; }
-#shuffleBtn { width:88px; background-image:url("./assets/ui/shuffle.svg?v=20260925-ui-v1") !important; }
-#shakeBtn { width:73px; background-image:url("./assets/ui/shake.svg?v=20260925-ui-v1") !important; }
+#removeBtn { width:92px; background-image:url("./assets/ui/remove.svg?v=20260926-ui-v2") !important; }
+#unlockBtn { width:69px; height:72px; background-image:url("./assets/ui/unlock.svg?v=20260926-ui-v2") !important; }
+#shuffleBtn { width:88px; background-image:url("./assets/ui/shuffle.svg?v=20260926-ui-v2") !important; }
+#shakeBtn { width:73px; background-image:url("./assets/ui/shake.svg?v=20260926-ui-v2") !important; }
 
 .power-btn:active {
   transform:translateY(4px) scale(.96);
@@ -317,65 +317,4 @@ button {
 @media (max-height:700px) {
   .top-btn { top:max(10px,env(safe-area-inset-top)); }
   .power-bar { transform:scale(.94); transform-origin:center bottom; }
-}
-
-
-/* Garden UI art skin — 2026-09-24 */
-.top-btn.settings {
-  top:max(10px, env(safe-area-inset-top));
-  left:8px;
-  width:60px;
-  height:60px;
-  border:0;
-  border-radius:0;
-  background-color:transparent;
-  background-image:url("./assets/ui/ui-pack.webp?v=20260924-garden-ui1");
-  background-repeat:no-repeat;
-  background-size:352px 960px;
-  background-position:-190px -660px;
-  box-shadow:none;
-}
-.top-btn.settings span { opacity:0; }
-
-.power-bar {
-  left:12px;
-  right:12px;
-  bottom:max(8px, env(safe-area-inset-bottom));
-  height:66px;
-  gap:4px;
-}
-.power-btn,
-.power-btn.green,
-.power-btn.gold,
-#removeBtn,
-#unlockBtn,
-#shuffleBtn,
-#shakeBtn {
-  width:80px !important;
-  height:60px !important;
-  min-width:80px;
-  border:0 !important;
-  border-radius:0 !important;
-  padding:0 !important;
-  background-color:transparent !important;
-  background-image:url("./assets/ui/ui-pack.webp?v=20260924-garden-ui1") !important;
-  background-repeat:no-repeat !important;
-  background-size:352px 960px !important;
-  box-shadow:none !important;
-  overflow:visible;
-}
-#removeBtn  { background-position:0 -870px !important; }
-#unlockBtn  { background-position:-85px -870px !important; }
-#shuffleBtn { background-position:-170px -870px !important; }
-#shakeBtn   { background-position:-255px -870px !important; }
-
-.power-btn > * { opacity:0 !important; }
-.power-btn:active {
-  transform:translateY(3px) scale(.97);
-  filter:brightness(.94);
-}
-
-@media (max-height:700px) {
-  .top-btn.settings { top:max(6px,env(safe-area-inset-top)); }
-  .power-bar { transform:scale(.90); transform-origin:center bottom; }
 }
