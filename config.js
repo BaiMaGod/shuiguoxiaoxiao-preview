@@ -1,5 +1,5 @@
 window.GAME_CONFIG = Object.freeze({
-  version: "2.3.4",
+  version: "2.3.5",
   width: 390,
   height: 844,
   level: 5,
@@ -56,6 +56,8 @@ window.GAME_CONFIG = Object.freeze({
   physics: {
     gravityY: 1,
     gravityScale: 0.00165,
+    // 点击释放时给一个适中的初始向下速度，只加快起步，不改变全局重力。
+    releaseVelocityY: 1.25,
     restitution: 0.05,
     friction: 0.12,
     frictionStatic: 0.22,
