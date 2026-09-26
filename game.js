@@ -280,7 +280,7 @@
     item.lastY = item.body.position.y;
     Body.setStatic(item.body, false);
     if (Sleeping && Sleeping.set) Sleeping.set(item.body, false);
-    Body.setVelocity(item.body, { x:0, y:0 });
+    Body.setVelocity(item.body, {\n      x:0,\n      y:kick ? (C.physics.releaseVelocityY || 1.25) : 0\n    });
     Body.setAngularVelocity(item.body, (Math.random() - .5) * .035);
 
     if (kick) {
