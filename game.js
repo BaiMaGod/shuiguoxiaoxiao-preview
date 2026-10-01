@@ -13,15 +13,8 @@
   const FRUIT_STATE = Object.freeze({
     BOARD: 'board',
     FALLING: 'falling',
-    TO_TRAY: 'toTray',
+    HAND: 'hand',
     CLEARED: 'cleared'
-  });
-
-  const TRAY_STATE = Object.freeze({
-    FLYING: 'flying',
-    IDLE: 'idle',
-    CLEARING: 'clearing',
-    SLIDING: 'sliding'
   });
 
   const ui = {
@@ -41,9 +34,10 @@
   const world = engine.world;
 
   let fruits = [];
-  let tray = [];
+  let hands = [null, null, null, null];
   let particles = [];
   let boundaries = [];
+  let activeAction = null;
   let nextFruitId = 1;
   let nextRenderOrder = 1;
   let total = 0;
@@ -51,13 +45,16 @@
   let gameEnded = false;
   let toastTimer = 0;
   let audioCtx = null;
-  let activePair = null;
-  let pairBusy = false;
-  let trayDangerUntil = 0;
-  let pendingLoseAt = 0;
   let lastTime = performance.now();
   let boardShift = null;
   let lastBoardShiftAt = 0;
+  let monkeyFx = {
+    bowStart:0,
+    bowUntil:0,
+    bowMonkey:-1,
+    thanksUntil:0,
+    dangerUntil:0
+  };
 
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -129,47 +126,10 @@
       return body;
     };
 
-    add(Bodies.rectangle(-12, 330, 24, 700, { isStatic:true, friction:.4 }));
-    add(Bodies.rectangle(W + 12, 330, 24, 700, { isStatic:true, friction:.4 }));
-
-    const leftRamp = C.geometry.leftRamp;
-    const rightRamp = C.geometry.rightRamp;
-
-    add(Bodies.rectangle(
-      leftRamp.x,
-      leftRamp.y,
-      leftRamp.length,
-      leftRamp.thickness,
-      {
-        isStatic:true,
-        angle:leftRamp.angle,
-        friction:C.physics.rampFriction,
-        restitution:0.02
-      }
-    ));
-
-    add(Bodies.rectangle(
-      rightRamp.x,
-      rightRamp.y,
-      rightRamp.length,
-      rightRamp.thickness,
-      {
-        isStatic:true,
-        angle:rightRamp.angle,
-        friction:C.physics.rampFriction,
-        restitution:0.02
-      }
-    ));
-
-    // 不在中央收集口放竖直物理墙。
-    // 旧实现的两根墙会挡住斜坡末端，导致水果在入口永久卡死。
-    // 水果进入漏斗口后直接切换到槽位动画，因此这里只保留视觉通道。
-
-    add(Bodies.rectangle(W / 2, 760, 92, 12, {
-      isStatic:true,
-      friction:0.18,
-      restitution:0
-    }));
+    // V2.4: old ramps/chute/tray colliders are gone. Only keep side walls so
+    // released fruit can fall naturally into the monkeys' catch zone.
+    add(Bodies.rectangle(-12, 360, 24, 760, { isStatic:true, friction:.35 }));
+    add(Bodies.rectangle(W + 12, 360, 24, 760, { isStatic:true, friction:.35 }));
   }
 
   function buildLevel() {
@@ -178,18 +138,16 @@
     });
 
     fruits = [];
-    tray = [];
+    hands = [null, null, null, null];
     particles = [];
-    activePair = null;
-    pairBusy = false;
-    pendingLoseAt = 0;
-    trayDangerUntil = 0;
+    activeAction = null;
     clearedCount = 0;
     gameEnded = false;
     nextFruitId = 1;
     nextRenderOrder = 1;
     boardShift = null;
     lastBoardShiftAt = 0;
+    monkeyFx = { bowStart:0, bowUntil:0, bowMonkey:-1, thanksUntil:0, dangerUntil:0 };
     ui.overlay.classList.add('hidden');
     if (window.GameEffects && GameEffects.reset) GameEffects.reset();
 
@@ -197,7 +155,6 @@
     const types = [];
     const pairCount = targetCount / 2;
 
-    // 按“水果对”生成，而不是单纯随机单颗生成，避免高数量关卡出现奇数残单。
     for (let i = 0; i < pairCount; i++) {
       const type = C.fruitTypes[i % C.fruitTypes.length];
       types.push(type, type);
@@ -213,13 +170,7 @@
 
         const stagger = row % 2 ? layout.staggerX : 0;
         const baseX = C.board.startX + col * layout.spacingX + stagger;
-        const x = Math.min(
-          W - 27,
-          Math.max(27, baseX + (Math.random() - .5) * C.board.randomX)
-        );
-
-        // 从“最下方锚点”向上排布。第 2 关起水果更多、更密，
-        // 高关卡的最上方若超出屏幕，会作为储备层在后续下压时进入画面。
+        const x = Math.min(W - 27, Math.max(27, baseX + (Math.random() - .5) * C.board.randomX));
         const baseY = layout.bottomY - (layout.rows - 1 - row) * layout.spacingY;
         const y = baseY + (Math.random() - .5) * C.board.randomY;
         createFruit(types[index++], x, y);
@@ -232,10 +183,6 @@
   function createFruit(type, x, y) {
     const meta = fruitMeta(type);
     const radius = meta.radius + (Math.random() - .5) * .9;
-    // 不能直接用 { isStatic:true } 创建后再解除静态。
-    // Matter.js 0.20 在这种路径下没有可恢复的有限质量/惯量，
-    // Body.setStatic(false) 后会导致物理位置变成 NaN。
-    // 正确做法：先创建正常动态刚体，再切成 static，让 Matter 保存原始物理属性。
     const body = Bodies.circle(x, y, radius, {
       restitution:C.physics.restitution,
       friction:C.physics.friction,
@@ -269,8 +216,12 @@
     World.add(world, body);
   }
 
+  function hasFruitInFlight() {
+    return fruits.some(f => f.state === FRUIT_STATE.FALLING);
+  }
+
   function releaseFruit(item, kick = true) {
-    if (!item || gameEnded || item.state !== FRUIT_STATE.BOARD) return;
+    if (!item || gameEnded || activeAction || hasFruitInFlight() || item.state !== FRUIT_STATE.BOARD) return;
 
     item.state = FRUIT_STATE.FALLING;
     item.renderOrder = nextRenderOrder++;
@@ -282,14 +233,14 @@
     if (Sleeping && Sleeping.set) Sleeping.set(item.body, false);
     Body.setVelocity(item.body, {
       x:0,
-      y:kick ? (C.physics.releaseVelocityY || 1.25) : 0
+      y:kick ? C.physics.releaseVelocityY : 0
     });
-    Body.setAngularVelocity(item.body, (Math.random() - .5) * .035);
+    Body.setAngularVelocity(item.body, (Math.random() - .5) * .03);
 
     if (kick) {
       Body.applyForce(item.body, item.body.position, {
-        x:(Math.random() - .5) * .00008,
-        y:.00010
+        x:(Math.random() - .5) * .00006,
+        y:.00012
       });
     }
 
@@ -358,11 +309,11 @@
   }
 
   function onPointerDown(e) {
-    if (gameEnded) return;
+    if (gameEnded || activeAction || hasFruitInFlight()) return;
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width * W;
     const y = (e.clientY - rect.top) / rect.height * H;
-    if (y > 610) return;
+    if (y > 555) return;
 
     const fruit = findFruitAtPoint(x, y);
     if (!fruit) return;
@@ -376,169 +327,224 @@
 
   canvas.addEventListener('pointerdown', onPointerDown, { passive:true });
 
-  function collectFruit(fruit) {
-    if (gameEnded || fruit.state !== FRUIT_STATE.FALLING) return;
-    if (tray.length >= C.tray.capacity) return;
-
-    const p = fruit.body.position;
-    fruit.state = FRUIT_STATE.TO_TRAY;
-    World.remove(world, fruit.body);
-
-    const slotIndex = tray.length;
-    const now = performance.now();
-    tray.push({
-      id:fruit.id,
-      source:fruit,
-      type:fruit.type,
-      state:TRAY_STATE.FLYING,
-      x:p.x,
-      y:p.y,
-      fromX:p.x,
-      fromY:p.y,
-      targetX:C.tray.slots[slotIndex],
-      targetY:C.tray.y,
-      moveStart:now,
-      moveDuration:C.tray.flyDuration,
-      scale:1,
-      alpha:1,
-      clearStart:0
-    });
-
-    burst(p.x, p.y, fruit.type, 7);
-    updateHud();
-    ping(610, .045, .03);
+  function partnerHand(index) {
+    return index % 2 === 0 ? index + 1 : index - 1;
   }
 
-  function findTrayPair() {
-    // 4 槽二消：只有相邻两个相同水果才消除。
-    // 这样槽位顺序本身才有策略意义。
-    for (let i = 0; i < tray.length - 1; i++) {
-      const a = tray[i];
-      const b = tray[i + 1];
-      if (
-        a.state === TRAY_STATE.IDLE &&
-        b.state === TRAY_STATE.IDLE &&
-        a.type === b.type
-      ) {
-        return [a, b];
+  function monkeyIndexForHand(index) {
+    return index < 2 ? 0 : 1;
+  }
+
+  function firstEmptyOnOtherMonkey(matchIndex) {
+    const candidates = matchIndex < 2 ? [2, 3] : [0, 1];
+    return candidates.find(i => !hands[i]) ?? -1;
+  }
+
+  // Core rule: scan hand 1 -> 4. Empty hands are remembered, not selected
+  // immediately. The first same-type hand wins; only when no match exists do
+  // we use the first empty hand encountered during the scan.
+  function planCatch(type, slots = hands) {
+    let firstEmpty = -1;
+    for (let i = 0; i < 4; i++) {
+      const held = slots[i];
+      if (!held) {
+        if (firstEmpty < 0) firstEmpty = i;
+        continue;
+      }
+      if (held.type === type) {
+        const partner = partnerHand(i);
+        return {
+          kind:'match',
+          matchIndex:i,
+          targetHand:partner,
+          needsToss:Boolean(slots[partner])
+        };
       }
     }
+    return { kind:'store', targetHand:firstEmpty };
+  }
+
+  function pairForMonkey(monkeyIndex) {
+    const a = monkeyIndex * 2;
+    const b = a + 1;
+    if (hands[a] && hands[b] && hands[a].type === hands[b].type) return [a, b];
     return null;
   }
 
-  function trayIsStable() {
-    return tray.every(item => item.state === TRAY_STATE.IDLE);
+  function handPoint(index) {
+    return { x:C.monkeys.hands[index], y:C.monkeys.handY };
   }
 
-  function resolveTray() {
-    if (gameEnded || pairBusy || !trayIsStable()) return;
+  function mouthPoint(monkeyIndex) {
+    return { x:C.monkeys.centers[monkeyIndex], y:C.monkeys.mouthY };
+  }
 
-    const pair = findTrayPair();
-    if (pair) {
-      pairBusy = true;
-      activePair = pair;
-      const now = performance.now();
-      pair.forEach(item => {
-        item.state = TRAY_STATE.CLEARING;
-        item.clearStart = now;
-      });
-      ping(760, .05, .028);
+  function makeHandItem(fruit) {
+    return { id:fruit.id, type:fruit.type, source:fruit };
+  }
+
+  function startIncomingMove(pending) {
+    activeAction = {
+      kind:'move',
+      start:performance.now(),
+      duration:C.monkeys.catchDuration,
+      item:pending.item,
+      fromX:pending.fromX,
+      fromY:pending.fromY,
+      targetHand:pending.targetHand,
+      matchIndex:Number.isInteger(pending.matchIndex) ? pending.matchIndex : -1
+    };
+    ping(610, .045, .03);
+  }
+
+  function startConsume(handA, handB, afterIncoming = null) {
+    const monkeyIndex = monkeyIndexForHand(handA);
+    activeAction = {
+      kind:'consume',
+      start:performance.now(),
+      duration:C.monkeys.eatDuration,
+      handA,
+      handB,
+      monkeyIndex,
+      afterIncoming
+    };
+    ping(790, .05, .03);
+  }
+
+  function startLose() {
+    if (DEBUG.disableGameOver) {
+      activeAction = null;
+      return;
+    }
+    const now = performance.now();
+    monkeyFx.dangerUntil = now + C.monkeys.loseDelay + 500;
+    activeAction = { kind:'lose', start:now, duration:C.monkeys.loseDelay };
+    ping(120, .12, .045);
+  }
+
+  function beginMonkeyCatch(fruit) {
+    if (gameEnded || activeAction || fruit.state !== FRUIT_STATE.FALLING) return;
+
+    const p = { x:fruit.body.position.x, y:fruit.body.position.y };
+    World.remove(world, fruit.body);
+    fruit.state = FRUIT_STATE.HAND;
+    const item = makeHandItem(fruit);
+    const plan = planCatch(fruit.type);
+
+    if (plan.kind === 'store') {
+      if (plan.targetHand < 0) {
+        startLose();
+        return;
+      }
+      startIncomingMove({ item, fromX:p.x, fromY:p.y, targetHand:plan.targetHand, matchIndex:-1 });
       return;
     }
 
-    if (clearedCount >= total) {
-      finish(true);
+    const pending = {
+      item,
+      fromX:p.x,
+      fromY:p.y,
+      matchIndex:plan.matchIndex,
+      targetHand:plan.targetHand
+    };
+
+    if (!plan.needsToss) {
+      startIncomingMove(pending);
       return;
     }
 
-    if (tray.length >= C.tray.capacity && !DEBUG.disableGameOver && !pendingLoseAt) {
-      const now = performance.now();
-      trayDangerUntil = now + 560;
-      pendingLoseAt = now + 560;
-      ping(120, .12, .045);
+    const tossTo = firstEmptyOnOtherMonkey(plan.matchIndex);
+    if (tossTo < 0) {
+      // This should be unreachable in normal play because four occupied,
+      // non-clearing hands already ends the game immediately.
+      startLose();
+      return;
     }
+
+    activeAction = {
+      kind:'toss',
+      start:performance.now(),
+      duration:C.monkeys.tossDuration,
+      fromHand:plan.targetHand,
+      toHand:tossTo,
+      item:hands[plan.targetHand],
+      pendingIncoming:pending
+    };
+    ping(520, .04, .025);
   }
 
-  function relayoutTray(now = performance.now()) {
-    tray.forEach((item, index) => {
-      item.fromX = item.x;
-      item.fromY = item.y;
-      item.targetX = C.tray.slots[index];
-      item.targetY = C.tray.y;
-      item.moveStart = now;
-      item.moveDuration = C.tray.slideDuration;
-      item.scale = 1;
-      item.alpha = 1;
-      item.state = TRAY_STATE.SLIDING;
-    });
+  function allHandsFull() {
+    return hands.every(Boolean);
   }
 
-  function finalizePair(pair) {
+  function completeConsume(action, now) {
+    const pair = [hands[action.handA], hands[action.handB]].filter(Boolean);
     pair.forEach(item => {
-      burst(item.x, item.y, item.type, 15);
+      const p = mouthPoint(action.monkeyIndex);
+      burst(p.x, p.y, item.type, 15);
       item.source.state = FRUIT_STATE.CLEARED;
       clearedCount += 1;
     });
-    tray = tray.filter(item => !pair.includes(item));
-    activePair = null;
-    pairBusy = false;
-    pendingLoseAt = 0;
-    trayDangerUntil = 0;
+    hands[action.handA] = null;
+    hands[action.handB] = null;
     updateHud();
     ping(980, .075, .045);
 
-    if (tray.length) relayoutTray();
-    else resolveTray();
+    monkeyFx.bowStart = now;
+    monkeyFx.bowUntil = now + C.monkeys.bowDuration;
+    monkeyFx.bowMonkey = action.monkeyIndex;
+    monkeyFx.thanksUntil = now + C.monkeys.bowDuration;
+
+    if (action.afterIncoming) {
+      activeAction = null;
+      startIncomingMove(action.afterIncoming);
+      return;
+    }
+
+    activeAction = null;
+    if (clearedCount >= total) finish(true);
   }
 
-  function updateTrayAnimations(now) {
-    let becameStable = false;
+  function updateHandAction(now) {
+    if (!activeAction) return;
+    const action = activeAction;
+    const t = clamp01((now - action.start) / Math.max(1, action.duration));
+    if (t < 1) return;
 
-    for (const item of tray) {
-      if (item.state === TRAY_STATE.FLYING || item.state === TRAY_STATE.SLIDING) {
-        const t = clamp01((now - item.moveStart) / item.moveDuration);
-        const eased = item.state === TRAY_STATE.FLYING ? easeOutBack(t) : easeOutCubic(t);
-        item.x = lerp(item.fromX, item.targetX, eased);
-        item.y = lerp(item.fromY, item.targetY, eased);
-
-        if (item.state === TRAY_STATE.FLYING) {
-          if (t < .65) {
-            item.scale = lerp(1.16, .95, t / .65);
-          } else {
-            item.scale = 1 + Math.sin(((t - .65) / .35) * Math.PI) * .12;
-          }
-        } else {
-          item.scale = 1;
-        }
-        if (t >= 1) {
-          item.x = item.targetX;
-          item.y = item.targetY;
-          item.state = TRAY_STATE.IDLE;
-          item.scale = 1;
-          becameStable = true;
-          ping(560, .03, .018);
-        }
-      } else if (item.state === TRAY_STATE.CLEARING) {
-        const t = clamp01((now - item.clearStart) / C.tray.clearDuration);
-        item.scale = 1 + Math.sin(t * Math.PI) * .28;
-        item.alpha = 1 - Math.max(0, (t - .42) / .58);
-
-        if (activePair && activePair.length === 2) {
-          const centerX = (activePair[0].targetX + activePair[1].targetX) / 2;
-          item.x = lerp(item.targetX, centerX, Math.sin(t * Math.PI) * .18);
-        }
+    if (action.kind === 'move') {
+      hands[action.targetHand] = action.item;
+      if (action.matchIndex >= 0) {
+        startConsume(action.matchIndex, action.targetHand);
+      } else if (allHandsFull()) {
+        startLose();
+      } else {
+        activeAction = null;
       }
+      return;
     }
 
-    if (activePair) {
-      const done = activePair.every(item => now - item.clearStart >= C.tray.clearDuration);
-      if (done) {
-        finalizePair(activePair.slice());
-        return;
+    if (action.kind === 'toss') {
+      hands[action.fromHand] = null;
+      hands[action.toHand] = action.item;
+      const autoPair = pairForMonkey(monkeyIndexForHand(action.toHand));
+      if (autoPair) {
+        startConsume(autoPair[0], autoPair[1], action.pendingIncoming);
+      } else {
+        activeAction = null;
+        startIncomingMove(action.pendingIncoming);
       }
+      return;
     }
 
-    if (becameStable && trayIsStable()) resolveTray();
+    if (action.kind === 'consume') {
+      completeConsume(action, now);
+      return;
+    }
+
+    if (action.kind === 'lose') {
+      activeAction = null;
+      finish(false);
+    }
   }
 
   function startBoardShift(now) {
@@ -558,10 +564,10 @@
       start: now,
       duration: C.board.scrollDuration,
       items: still.map(f => ({
-        fruit: f,
-        fromX: f.body.position.x,
-        fromY: f.body.position.y,
-        toY: f.body.position.y + dy
+        fruit:f,
+        fromX:f.body.position.x,
+        fromY:f.body.position.y,
+        toY:f.body.position.y + dy
       }))
     };
     lastBoardShiftAt = now;
@@ -575,38 +581,24 @@
 
     const t = clamp01((now - boardShift.start) / boardShift.duration);
     const eased = easeOutCubic(t);
-
     boardShift.items.forEach(item => {
       const fruit = item.fruit;
       if (!fruit || fruit.state !== FRUIT_STATE.BOARD || !fruit.body) return;
       Body.setPosition(fruit.body, {
-        x: item.fromX,
-        y: lerp(item.fromY, item.toY, eased)
+        x:item.fromX,
+        y:lerp(item.fromY, item.toY, eased)
       });
     });
-
-    if (t >= 1) {
-      boardShift = null;
-    }
+    if (t >= 1) boardShift = null;
   }
 
   function checkFruitCollection() {
-    if (gameEnded) return;
+    if (gameEnded || activeAction) return;
     for (const fruit of fruits) {
       if (fruit.state !== FRUIT_STATE.FALLING) continue;
-      const p = fruit.body.position;
-      if (
-        p.y > C.geometry.chute.captureY &&
-        p.x > C.geometry.chute.xMin &&
-        p.x < C.geometry.chute.xMax &&
-        tray.length < C.tray.capacity
-      ) {
-        // 水果一进入中央收集口，就由物理世界切换到槽位动画。
-        // 不再要求它穿完整条狭窄通道，避免两个水果在入口互相卡死。
-        collectFruit(fruit);
-      } else if (p.y > H + 80) {
-        Body.setPosition(fruit.body, { x:W/2 + (Math.random() - .5) * 24, y:620 });
-        Body.setVelocity(fruit.body, { x:0, y:0 });
+      if (fruit.body.position.y >= C.monkeys.catchY) {
+        beginMonkeyCatch(fruit);
+        return;
       }
     }
   }
@@ -616,155 +608,34 @@
       if (fruit.state !== FRUIT_STATE.FALLING || !fruit.body) continue;
       const p = fruit.body.position;
       const moved = Math.abs(p.x - fruit.lastX) + Math.abs(p.y - fruit.lastY);
-      if (moved > 1.5) {
+      if (moved > 1.2) {
         fruit.lastX = p.x;
         fruit.lastY = p.y;
         fruit.lastMoveTime = now;
         continue;
       }
 
-      if (now - fruit.lastMoveTime > 1800 && p.y < 688) {
+      if (now - fruit.lastMoveTime > 1100 && p.y < C.monkeys.catchY - 12) {
         if (Sleeping && Sleeping.set) Sleeping.set(fruit.body, false);
-        Body.setVelocity(fruit.body, {
-          x:(Math.random() - .5) * .28,
-          y:.20
+        Body.setPosition(fruit.body, {
+          x:Math.max(24, Math.min(W - 24, p.x + (Math.random() - .5) * 34)),
+          y:p.y + 18
         });
+        Body.setVelocity(fruit.body, { x:(Math.random() - .5) * .4, y:1.35 });
         fruit.lastMoveTime = now;
       }
-    }
-  }
-
-  function checkPendingGameOver(now) {
-    if (pendingLoseAt && now >= pendingLoseAt && !gameEnded) {
-      pendingLoseAt = 0;
-      finish(false);
     }
   }
 
   function finish(win) {
     if (gameEnded) return;
     gameEnded = true;
-    ui.emoji.textContent = win ? '🎉' : '😵';
-    ui.title.textContent = win ? '过关啦！' : '槽位满了';
+    ui.emoji.textContent = win ? '🎉' : '🙈';
+    ui.title.textContent = win ? '过关啦！' : '猴子没手啦';
     ui.desc.textContent = win
-      ? '所有水果都成功配对消除了。'
-      : '4 个槽位被不同水果占满了，换个顺序再试试。';
+      ? '两个猴子把所有成对水果都吃掉啦！'
+      : '四只手抓满了不同水果，换个顺序再试试。';
     setTimeout(() => ui.overlay.classList.remove('hidden'), 220);
-  }
-
-  function drawBackground() {
-    const sky = ctx.createLinearGradient(0, 0, 0, H);
-    sky.addColorStop(0, '#52afe6');
-    sky.addColorStop(.58, '#67c8f2');
-    sky.addColorStop(.76, '#cdf9f9');
-    sky.addColorStop(1, '#87e1f1');
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, W, H);
-
-    ctx.save();
-    ctx.globalAlpha = .22;
-    ctx.fillStyle = '#fff';
-    [[58,230,56],[85,255,64],[37,262,45],[112,275,40],[335,245,52]].forEach(([x,y,r]) => {
-      ctx.beginPath();
-      ctx.arc(x,y,r,0,Math.PI*2);
-      ctx.fill();
-    });
-    ctx.restore();
-
-    drawBuilding(0, 615, 150, false);
-    drawBuilding(240, 615, 150, true);
-    drawRampArtwork();
-    drawChute();
-
-    ctx.fillStyle = 'rgba(255,255,255,.58)';
-    ctx.font = '7px sans-serif';
-    ctx.fillText('VERSION:' + C.version, 54, 10);
-  }
-
-  function drawBuilding(x, y, w, mirror) {
-    ctx.save();
-    const wall = ctx.createLinearGradient(x, y, x, H);
-    wall.addColorStop(0, '#f2dca8');
-    wall.addColorStop(1, '#ddbd82');
-    ctx.fillStyle = wall;
-    ctx.fillRect(x, y, w, H-y);
-
-    ctx.strokeStyle = 'rgba(179,128,72,.60)';
-    ctx.lineWidth = 2;
-    const bw = 42;
-    const bh = 22;
-    for (let r = 0; r < 7; r++) {
-      for (let c = -1; c < 5; c++) {
-        const ox = (r % 2) * 21;
-        ctx.strokeRect(x + c * bw + ox, y + r * bh, bw, bh);
-      }
-    }
-
-    const doorX = mirror ? x + 72 : x + 8;
-    roundRect(doorX, 730, 70, 114, 10, '#71482c', '#a67b52', 4);
-    ctx.restore();
-  }
-
-  function drawRampArtwork() {
-    ctx.save();
-    ctx.lineCap = 'round';
-    ctx.lineWidth = 22;
-    ctx.strokeStyle = '#bd7d31';
-    ctx.beginPath(); ctx.moveTo(-8,548); ctx.lineTo(151,621); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(398,548); ctx.lineTo(239,621); ctx.stroke();
-
-    ctx.lineWidth = 16;
-    const g = ctx.createLinearGradient(0,540,0,620);
-    g.addColorStop(0,'#fff0b3');
-    g.addColorStop(1,'#f1b54d');
-    ctx.strokeStyle = g;
-    ctx.beginPath(); ctx.moveTo(-8,548); ctx.lineTo(151,621); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(398,548); ctx.lineTo(239,621); ctx.stroke();
-    ctx.restore();
-  }
-
-  function drawChute() {
-    const g = ctx.createLinearGradient(0,620,0,735);
-    g.addColorStop(0,'#7b4b22');
-    g.addColorStop(1,'#d6933f');
-    ctx.fillStyle = g;
-    ctx.fillRect(158,620,74,115);
-
-    ctx.strokeStyle = 'rgba(112,67,32,.55)';
-    ctx.lineWidth = 2;
-    for (let y = 632; y < 735; y += 22) {
-      ctx.beginPath(); ctx.moveTo(158,y); ctx.lineTo(232,y); ctx.stroke();
-    }
-  }
-
-  function drawTrayBase(now) {
-    const danger = now < trayDangerUntil;
-    const shake = danger ? Math.sin(now * .09) * 4 : 0;
-    ctx.save();
-    ctx.translate(shake, 0);
-
-    if (danger) {
-      ctx.shadowColor = 'rgba(255,70,50,.8)';
-      ctx.shadowBlur = 14;
-    }
-
-    roundRect(147,670,96,45,13,'#e8b46c','#805028',4);
-    roundRect(153,676,84,31,10,'#8a5d39','#654127',2);
-
-    C.tray.slots.forEach(x => {
-      const slotG = ctx.createRadialGradient(x-2,C.tray.y-4,1,x,C.tray.y,13);
-      slotG.addColorStop(0,'rgba(255,241,191,.30)');
-      slotG.addColorStop(1,'rgba(61,38,26,.36)');
-      ctx.fillStyle = slotG;
-      ctx.beginPath();
-      ctx.arc(x,C.tray.y,10.2,0,Math.PI*2);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255,224,166,.24)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    });
-
-    ctx.restore();
   }
 
   function isDrawableSprite(img) {
@@ -777,17 +648,12 @@
   function drawSprite(type, radius, alpha = 1) {
     const img = window.GameAssets && window.GameAssets.fruits[type];
     ctx.globalAlpha *= alpha;
-
     if (isDrawableSprite(img)) {
       try {
         ctx.drawImage(img, -radius, -radius, radius*2, radius*2);
         return;
-      } catch (err) {
-        // Never leave an interactive fruit invisible because one bitmap
-        // cannot be drawn. Fall through to a visible procedural sprite.
-      }
+      } catch (err) {}
     }
-
     drawFallbackFruit(type, radius);
   }
 
@@ -802,174 +668,124 @@
   function drawBoardFruit(fruit, now) {
     const p = fruit.body.position;
     let shakeX = 0;
-    if (now < fruit.visual.blockedUntil) {
-      shakeX = Math.sin(now * .07) * 3.2;
-    }
+    if (now < fruit.visual.blockedUntil) shakeX = Math.sin(now * .07) * 3.2;
 
     ctx.save();
     ctx.translate(p.x + shakeX, p.y);
     ctx.rotate(fruit.body.angle);
     const scale = fruitVisualScale(fruit, now);
     ctx.scale(scale, scale);
-
-    if (now < fruit.visual.glowUntil) {
-      const pulse = .55 + Math.sin(now*.012)*.18;
-      ctx.shadowColor = 'rgba(255,255,255,' + pulse + ')';
-      ctx.shadowBlur = 12;
-    }
-
-    ctx.shadowColor = fruit.state === FRUIT_STATE.FALLING
-      ? 'rgba(38,65,48,.34)'
-      : 'rgba(38,65,48,.24)';
+    ctx.shadowColor = fruit.state === FRUIT_STATE.FALLING ? 'rgba(38,65,48,.34)' : 'rgba(38,65,48,.24)';
     ctx.shadowBlur = fruit.state === FRUIT_STATE.FALLING ? 7 : 4;
     ctx.shadowOffsetY = fruit.state === FRUIT_STATE.FALLING ? 5 : 3;
-
     drawSprite(fruit.type, fruit.visualRadius, fruit.visual.alpha);
     ctx.restore();
 
     if (DEBUG.showPhysicsBody || DEBUG.showClickableState) {
       ctx.save();
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, fruit.radius, 0, Math.PI*2);
-      ctx.lineWidth = 1.4;
-      if (DEBUG.showClickableState && fruit.state === FRUIT_STATE.BOARD) {
-        ctx.strokeStyle = isFruitExposed(fruit) ? '#18ff58' : '#ff2f42';
-      } else {
-        ctx.strokeStyle = 'rgba(255,255,255,.75)';
-      }
-      ctx.stroke();
-      ctx.restore();
+      ctx.beginPath(); ctx.arc(p.x,p.y,fruit.radius,0,Math.PI*2);
+      ctx.lineWidth=1.4;
+      ctx.strokeStyle = DEBUG.showClickableState && fruit.state === FRUIT_STATE.BOARD
+        ? (isFruitExposed(fruit) ? '#18ff58' : '#ff2f42')
+        : 'rgba(255,255,255,.75)';
+      ctx.stroke(); ctx.restore();
     }
   }
 
-  function drawTrayItems() {
-    for (const item of tray) {
-      ctx.save();
-      ctx.translate(item.x, item.y);
-      ctx.scale(item.scale, item.scale);
-      drawSprite(item.type, 10.2, item.alpha);
-      ctx.restore();
+  function drawHandFruit(item, x, y, scale = 1, alpha = 1) {
+    if (!item) return;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    ctx.shadowColor='rgba(53,39,25,.25)';
+    ctx.shadowBlur=5; ctx.shadowOffsetY=3;
+    drawSprite(item.type, 17.5, alpha);
+    ctx.restore();
+  }
+
+  function drawHandsAndActions(now) {
+    const action = activeAction;
+    const skip = new Set();
+
+    if (action && action.kind === 'toss') skip.add(action.fromHand);
+    if (action && action.kind === 'consume') {
+      skip.add(action.handA); skip.add(action.handB);
+    }
+
+    hands.forEach((item, index) => {
+      if (!item || skip.has(index)) return;
+      const p = handPoint(index);
+      drawHandFruit(item, p.x, p.y, 1);
+    });
+
+    if (!action) return;
+    const t = clamp01((now - action.start) / Math.max(1, action.duration));
+
+    if (action.kind === 'move') {
+      const to = handPoint(action.targetHand);
+      const eased = easeOutBack(t);
+      const x = lerp(action.fromX, to.x, eased);
+      const y = lerp(action.fromY, to.y, easeOutCubic(t));
+      drawHandFruit(action.item, x, y, lerp(1.08, 1, t));
+      return;
+    }
+
+    if (action.kind === 'toss') {
+      const from = handPoint(action.fromHand);
+      const to = handPoint(action.toHand);
+      const eased = easeOutCubic(t);
+      const x = lerp(from.x, to.x, eased);
+      const y = lerp(from.y, to.y, eased) - Math.sin(t * Math.PI) * 48;
+      drawHandFruit(action.item, x, y, 1 + Math.sin(t*Math.PI)*.08);
+      const waiting = action.pendingIncoming;
+      drawHandFruit(waiting.item, waiting.fromX, waiting.fromY, .92 + Math.sin(now*.01)*.03);
+      return;
+    }
+
+    if (action.kind === 'consume') {
+      const mouth = mouthPoint(action.monkeyIndex);
+      const fromA = handPoint(action.handA);
+      const fromB = handPoint(action.handB);
+      const merge = {
+        x:(fromA.x + fromB.x) / 2,
+        y:C.monkeys.handY - 12
+      };
+      const itemA = hands[action.handA];
+      const itemB = hands[action.handB];
+
+      // First merge two same fruits into one, then feed the merged fruit to the monkey.
+      if (t < .46) {
+        const mt = easeOutCubic(t / .46);
+        if (itemA) drawHandFruit(itemA, lerp(fromA.x, merge.x, mt), lerp(fromA.y, merge.y, mt), lerp(1, .78, mt));
+        if (itemB) drawHandFruit(itemB, lerp(fromB.x, merge.x, mt), lerp(fromB.y, merge.y, mt), lerp(1, .78, mt));
+      } else if (itemA || itemB) {
+        const et = easeOutCubic((t - .46) / .54);
+        const merged = itemA || itemB;
+        drawHandFruit(
+          merged,
+          lerp(merge.x, mouth.x, et),
+          lerp(merge.y, mouth.y, et),
+          lerp(1.12, .18, et),
+          1 - et*.55
+        );
+      }
+
+      if (action.afterIncoming) {
+        const waiting = action.afterIncoming;
+        drawHandFruit(waiting.item, waiting.fromX, waiting.fromY, .92 + Math.sin(now*.01)*.03);
+      }
     }
   }
 
   function drawFallbackFruit(type, r) {
-    // A failed/transparent asset must never become a clickable invisible
-    // object. Keep recognisable cut-fruit fallbacks for the most important
-    // problem types and a bright generic fallback for everything else.
-    if (type === 'apple') {
-      const skin = ctx.createRadialGradient(-r*.28,-r*.32,1,0,0,r);
-      skin.addColorStop(0,'#ff6b5f');
-      skin.addColorStop(1,'#c91f2e');
-      ctx.fillStyle = skin;
-      ctx.beginPath();
-      ctx.arc(0,0,r*.94,0,Math.PI*2);
-      ctx.fill();
-
-      ctx.fillStyle = '#fff1c8';
-      ctx.beginPath();
-      ctx.arc(0,0,r*.73,0,Math.PI*2);
-      ctx.fill();
-
-      ctx.fillStyle = '#704329';
-      [[-.16,-.05],[.16,.05]].forEach(([sx,sy]) => {
-        ctx.save();
-        ctx.translate(sx*r,sy*r);
-        ctx.rotate(sx < 0 ? -.45 : .45);
-        ctx.beginPath();
-        ctx.ellipse(0,0,r*.075,r*.15,0,0,Math.PI*2);
-        ctx.fill();
-        ctx.restore();
-      });
-
-      ctx.fillStyle = '#54a63e';
-      ctx.beginPath();
-      ctx.ellipse(r*.20,-r*.92,r*.22,r*.10,-.45,0,Math.PI*2);
-      ctx.fill();
-    } else if (type === 'watermelon') {
-      ctx.fillStyle = '#2f9d3c';
-      ctx.beginPath();
-      ctx.arc(0,0,r*.96,0,Math.PI*2);
-      ctx.fill();
-
-      ctx.fillStyle = '#d8f2b7';
-      ctx.beginPath();
-      ctx.arc(0,0,r*.80,0,Math.PI*2);
-      ctx.fill();
-
-      const flesh = ctx.createRadialGradient(-r*.22,-r*.28,1,0,0,r*.72);
-      flesh.addColorStop(0,'#ff7777');
-      flesh.addColorStop(1,'#ef3447');
-      ctx.fillStyle = flesh;
-      ctx.beginPath();
-      ctx.arc(0,0,r*.69,0,Math.PI*2);
-      ctx.fill();
-
-      ctx.fillStyle = '#4b2d24';
-      for (const a of [-2.25,-1.05,.05,1.15,2.3]) {
-        ctx.save();
-        ctx.rotate(a);
-        ctx.translate(r*.36,0);
-        ctx.beginPath();
-        ctx.ellipse(0,0,r*.055,r*.11,0,0,Math.PI*2);
-        ctx.fill();
-        ctx.restore();
-      }
-    } else if (type === 'grape') {
-      // grape is currently represented by the purple-skin plum artwork.
-      ctx.fillStyle = '#6f2e9f';
-      ctx.beginPath();
-      ctx.arc(0,0,r*.96,0,Math.PI*2);
-      ctx.fill();
-
-      const flesh = ctx.createRadialGradient(-r*.2,-r*.2,1,0,0,r*.75);
-      flesh.addColorStop(0,'#ffe66f');
-      flesh.addColorStop(1,'#f39b2d');
-      ctx.fillStyle = flesh;
-      ctx.beginPath();
-      ctx.arc(0,0,r*.72,0,Math.PI*2);
-      ctx.fill();
-
-      ctx.fillStyle = '#8b4a2b';
-      ctx.beginPath();
-      ctx.ellipse(0,0,r*.15,r*.30,0,0,Math.PI*2);
-      ctx.fill();
-    } else {
-      const m = fruitMeta(type);
-      const g = ctx.createRadialGradient(-r*.35,-r*.4,1,0,0,r);
-      g.addColorStop(0,m.c2);
-      g.addColorStop(1,m.c);
-      ctx.fillStyle = g;
-      ctx.strokeStyle = 'rgba(77,48,27,.55)';
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      ctx.arc(0,0,r*.92,0,Math.PI*2);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = 'rgba(255,255,255,.48)';
-      ctx.beginPath();
-      ctx.ellipse(-r*.28,-r*.3,r*.16,r*.25,-.6,0,Math.PI*2);
-      ctx.fill();
-    }
-  }
-
-  function roundRect(x,y,w,h,r,fill,stroke,lw=1) {
-    ctx.beginPath();
-    if (ctx.roundRect) {
-      ctx.roundRect(x,y,w,h,r);
-    } else {
-      ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-      ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-      ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-      ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
-    }
-    ctx.fillStyle = fill;
-    ctx.fill();
-    if (stroke) {
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = lw;
-      ctx.stroke();
-    }
+    const m = fruitMeta(type);
+    const g = ctx.createRadialGradient(-r*.35,-r*.4,1,0,0,r);
+    g.addColorStop(0,m.c2); g.addColorStop(1,m.c);
+    ctx.fillStyle=g;
+    ctx.strokeStyle='rgba(77,48,27,.55)'; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.arc(0,0,r*.92,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.48)';
+    ctx.beginPath(); ctx.ellipse(-r*.28,-r*.3,r*.16,r*.25,-.6,0,Math.PI*2); ctx.fill();
   }
 
   function burst(x,y,type,count=10) {
@@ -1000,9 +816,7 @@
     for (const p of particles) {
       ctx.globalAlpha = Math.max(0,p.life);
       ctx.fillStyle = p.c;
-      ctx.beginPath();
-      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-      ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
     }
     ctx.globalAlpha = 1;
   }
@@ -1019,20 +833,17 @@
       audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
       const o = audioCtx.createOscillator();
       const g = audioCtx.createGain();
-      o.type = 'sine';
-      o.frequency.value = freq;
+      o.type='sine'; o.frequency.value=freq;
       g.gain.setValueAtTime(vol,audioCtx.currentTime);
-      g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime + duration);
-      o.connect(g).connect(audioCtx.destination);
-      o.start();
-      o.stop(audioCtx.currentTime + duration);
+      g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+duration);
+      o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+duration);
     } catch (e) {}
   }
 
   document.getElementById('restartBtn').addEventListener('click', buildLevel);
 
   document.getElementById('shakeBtn').addEventListener('click', () => {
-    if (gameEnded) return;
+    if (gameEnded || activeAction) return;
     fruits.filter(f => f.state === FRUIT_STATE.FALLING).forEach(f => {
       if (Sleeping && Sleeping.set) Sleeping.set(f.body, false);
       Body.applyForce(f.body, f.body.position, {
@@ -1040,12 +851,12 @@
         y:-Math.random()*.0007
       });
     });
-    showToast('震一震！掉落中的水果松动了');
+    showToast('震一震！');
     ping(170,.08,.04);
   });
 
   document.getElementById('shuffleBtn').addEventListener('click', () => {
-    if (gameEnded) return;
+    if (gameEnded || activeAction || hasFruitInFlight()) return;
     const still = fruits.filter(f => f.state === FRUIT_STATE.BOARD);
     const positions = shuffle(still.map(f => ({ x:f.body.position.x, y:f.body.position.y })));
     still.forEach((f,i) => {
@@ -1057,31 +868,32 @@
   });
 
   document.getElementById('removeBtn').addEventListener('click', () => {
-    if (gameEnded || pairBusy) return;
-    const target = tray.find(x => x.state === TRAY_STATE.IDLE);
-    if (!target) {
-      showToast('槽位里还没有可消除的水果');
+    if (gameEnded || activeAction || hasFruitInFlight()) return;
+    const index = hands.findIndex(Boolean);
+    if (index < 0) {
+      showToast('猴子手里还没有水果');
       return;
     }
-    target.source.state = FRUIT_STATE.CLEARED;
+    const item = hands[index];
+    hands[index] = null;
+    item.source.state = FRUIT_STATE.CLEARED;
     clearedCount += 1;
-    burst(target.x,target.y,target.type,16);
-    tray = tray.filter(x => x !== target);
+    const p=handPoint(index);
+    burst(p.x,p.y,item.type,16);
     updateHud();
     ping(980,.08,.045);
-    if (tray.length) relayoutTray();
-    else resolveTray();
-    showToast('帮你移除 1 个槽位水果');
+    showToast('帮猴子吃掉 1 个水果');
+    if (clearedCount >= total) finish(true);
   });
 
   document.getElementById('unlockBtn').addEventListener('click', () => {
-    if (gameEnded) return;
+    if (gameEnded || activeAction || hasFruitInFlight()) return;
     const target = fruits
       .filter(f => f.state === FRUIT_STATE.BOARD && isFruitExposed(f))
       .sort((a,b) => b.body.position.y - a.body.position.y)[0];
     if (target) {
       releaseFruit(target,false);
-      Body.applyForce(target.body,target.body.position,{x:0,y:.00035});
+      Body.applyForce(target.body,target.body.position,{x:0,y:.00045});
       showToast('自动释放一个可点击水果');
     }
   });
@@ -1091,7 +903,7 @@
     canvas.width = Math.max(1, Math.round(rect.width * DPR));
     canvas.height = Math.max(1, Math.round(rect.height * DPR));
     ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
+    ctx.imageSmoothingQuality = 'high';
   }
 
   window.addEventListener('resize', resizeBackingStore);
@@ -1106,7 +918,6 @@
     const boardFruits = fruits
       .filter(f => f.state === FRUIT_STATE.BOARD)
       .sort((a,b) => a.renderOrder - b.renderOrder);
-
     const fallingFruits = fruits
       .filter(f => f.state === FRUIT_STATE.FALLING)
       .sort((a,b) => a.renderOrder - b.renderOrder);
@@ -1116,10 +927,10 @@
 
     const progress = Math.round((clearedCount / Math.max(1,total)) * 100);
     GameRenderer.drawHud(ctx, remainingCount(), progress, C.level);
+    GameRenderer.drawMonkeys(ctx, now, monkeyFx);
+    drawHandsAndActions(now);
     GameRenderer.drawBottomDecor(ctx);
-    GameRenderer.drawTrayBase(ctx, now, trayDangerUntil);
 
-    drawTrayItems();
     if (!DEBUG.disableParticles) drawParticles();
     if (window.GameEffects) GameEffects.draw(ctx);
     GameRenderer.drawDebug(ctx);
@@ -1132,9 +943,8 @@
     if (!gameEnded) Engine.update(engine, dt);
     updateBoardShift(now);
     checkFruitCollection();
-    updateTrayAnimations(now);
     checkStuckFruits(now);
-    checkPendingGameOver(now);
+    updateHandAction(now);
     updateParticles(dt);
     if (window.GameEffects) GameEffects.update(dt, now);
     render(now);
@@ -1154,6 +964,9 @@
     if (ui.loading) ui.loading.classList.add('hidden');
     requestAnimationFrame(frame);
   }
+
+  // Small pure-logic hook for branch testing/debugging without exposing game state mutations.
+  window.__MONKEY_HAND_RULES__ = Object.freeze({ planCatch, partnerHand });
 
   startGame();
 })();

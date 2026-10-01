@@ -1,5 +1,5 @@
 window.GAME_CONFIG = Object.freeze({
-  version: "2.3.6",
+  version: "2.4.0",
   width: 390,
   height: 844,
   level: 5,
@@ -8,26 +8,12 @@ window.GAME_CONFIG = Object.freeze({
     skyTop: "#42aef2",
     skyMiddle: "#73cef3",
     skyBottom: "#dcf8fb",
-    cloud: "rgba(255,255,255,.72)",
     grassLight: "#8bdb4b",
     grassMid: "#5ab637",
     grassDark: "#287f2b",
-    leafLight: "#7fd342",
-    leafDark: "#2f8e36",
     woodLight: "#f1c574",
     woodMid: "#cb8843",
     woodDark: "#75431f",
-    woodEdge: "#5a3219",
-    stoneLight: "#f3d69a",
-    stoneDark: "#c99254",
-    panelLight: "#d7934b",
-    panelDark: "#70401f",
-    greenTop: "#63f04a",
-    greenBottom: "#22bd28",
-    greenStroke: "#118b1d",
-    goldTop: "#ffe560",
-    goldBottom: "#f1a221",
-    white: "#fffdf2",
     ink: "#65401f"
   },
 
@@ -55,78 +41,58 @@ window.GAME_CONFIG = Object.freeze({
 
   physics: {
     gravityY: 1,
-    gravityScale: 0.00165,
-    // 点击释放时给一个适中的初始向下速度，只加快起步，不改变全局重力。
-    releaseVelocityY: 1.25,
-    restitution: 0.05,
-    friction: 0.12,
-    frictionStatic: 0.22,
+    gravityScale: 0.00172,
+    releaseVelocityY: 1.65,
+    restitution: 0.04,
+    friction: 0.10,
+    frictionStatic: 0.20,
     density: 0.0018,
-    sleepThreshold: 45,
-    rampFriction: 0.06
-  },
-
-  geometry: {
-    leftRamp:  { x:72,  y:584.5, length:176, thickness:20, angle:0.431 },
-    rightRamp: { x:318, y:584.5, length:176, thickness:20, angle:-0.431 },
-    chute: { captureY:590, xMin:145, xMax:245 }
+    sleepThreshold: 35
   },
 
   board: {
     cols: 7,
     startX: 31,
-
-    // 第 1 关保留较疏的教学布局；第 2 关起进入高密度布局。
     level1BottomY: 355,
     level1SpacingX: 51,
     level1SpacingY: 48,
     level1StaggerX: 24,
-
     denseBottomY: 470,
     denseSpacingX: 49,
     denseSpacingY: 42,
     denseStaggerX: 23,
-
     randomX: 6,
     randomY: 5,
     hitScale: 1.32,
     blockedCoverRatio: 0.20,
-
-    // 关卡水果总量：全部按“成对”生成，保证理论上可全部二消。
     fruitCountByLevel: [0, 40, 56, 64, 72, 80],
     fruitGrowthAfter5: 8,
     maxFruitCount: 96,
-
-    // 当最下方未掉落水果进入上半屏时，整体下压，露出上方储备水果。
     scrollTriggerY: 405,
     scrollTargetY: 470,
     scrollDuration: 380,
     scrollCooldown: 550
   },
 
-  tray: {
-    capacity: 4,
-    y: 690,
-    slots: [142,176,210,244],
-    flyDuration: 250,
-    clearDuration: 360,
-    slideDuration: 190
-  },
-
-  visual: {
-    levelSign: { x:195, y:60, w:180, h:60 },
-    remainPanel: { x:55, y:656, w:88, h:110 },
-    progressPanel: { x:335, y:656, w:88, h:110 },
-    tray: { x:195, y:688, w:184, h:147 },
-    grassY: 758
+  monkeys: {
+    catchY: 555,
+    groundY: 742,
+    centers: [108, 282],
+    handY: 625,
+    hands: [66, 148, 242, 324],
+    mouthY: 670,
+    catchDuration: 250,
+    tossDuration: 210,
+    eatDuration: 390,
+    bowDuration: 470,
+    loseDelay: 430
   }
 });
 
 window.DEBUG_GAME = Object.assign({
   showPhysicsBody: false,
   showClickableState: false,
-  showRampCollider: false,
-  showCaptureZone: false,
+  showHandNumbers: false,
   disableDecorations: false,
   disableParticles: false,
   allFruitsClickable: false,

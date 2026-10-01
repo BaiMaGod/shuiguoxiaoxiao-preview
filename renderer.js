@@ -19,76 +19,11 @@
     if (stroke) { ctx.strokeStyle=stroke; ctx.lineWidth=lw; ctx.stroke(); }
   }
 
-  function ui(name) {
-    return window.GameAssets && window.GameAssets.ui && window.GameAssets.ui[name];
-  }
-
-  function drawImageFit(ctx,img,x,y,w,h,alpha=1) {
-    if (!img) return false;
-    ctx.save();
-    ctx.globalAlpha=alpha;
-    ctx.imageSmoothingEnabled=true;
-    ctx.imageSmoothingQuality="high";
-    ctx.drawImage(img,x,y,w,h);
-    ctx.restore();
-    return true;
-  }
-
-  function drawFallbackBackground(ctx) {
-    const g=ctx.createLinearGradient(0,0,0,H);
-    g.addColorStop(0,"#28aef4");
-    g.addColorStop(.58,"#70d2f4");
-    g.addColorStop(1,"#d9f7ea");
-    ctx.fillStyle=g;
-    ctx.fillRect(0,0,W,H);
-
-    ctx.save();
-    ctx.globalAlpha=.18;
-    ctx.fillStyle="#fff";
-    [[28,220,62,24],[355,280,72,28],[90,425,48,19]].forEach(([x,y,rx,ry])=>{
-      ctx.beginPath(); ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2); ctx.fill();
-    });
-    ctx.restore();
-
-    const hill=ctx.createLinearGradient(0,520,0,H);
-    hill.addColorStop(0,"#a9e660");
-    hill.addColorStop(1,"#3ca43c");
-    ctx.fillStyle=hill;
-    ctx.beginPath();
-    ctx.moveTo(0,615); ctx.quadraticCurveTo(86,565,170,605);
-    ctx.quadraticCurveTo(270,650,390,594); ctx.lineTo(390,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
-  }
-
-  function drawFallbackRamp(ctx,g) {
-    ctx.save();
-    ctx.translate(g.x,g.y);
-    ctx.rotate(g.angle);
-    ctx.shadowColor="rgba(75,42,17,.28)";
-    ctx.shadowBlur=7;
-    ctx.shadowOffsetY=5;
-    const grad=ctx.createLinearGradient(0,-13,0,13);
-    grad.addColorStop(0,"#ffe09c"); grad.addColorStop(.35,"#efba64"); grad.addColorStop(1,"#bd6d29");
-    rr(ctx,-g.length/2,-14,g.length,28,14,grad,"#754019",2.5);
-    ctx.restore();
-  }
-
-  function drawBackground(ctx) {
-    const bg=ui("background");
-    if (!drawImageFit(ctx,bg,0,0,W,H)) drawFallbackBackground(ctx);
-  }
-
-  function drawStructures(ctx) {
-    if (!ui("background")) {
-      drawFallbackRamp(ctx,C.geometry.leftRamp);
-      drawFallbackRamp(ctx,C.geometry.rightRamp);
-    }
-  }
-
   function drawNumber(ctx,text,x,y,size,fill,stroke,width=4) {
     ctx.save();
     ctx.textAlign="center";
     ctx.textBaseline="middle";
-    ctx.font=`900 ${size}px "Arial Black","PingFang SC","Microsoft YaHei",sans-serif`;
+    ctx.font="900 "+size+"px \"Arial Black\",\"PingFang SC\",\"Microsoft YaHei\",sans-serif";
     ctx.lineJoin="round";
     ctx.lineWidth=width;
     ctx.strokeStyle=stroke;
@@ -98,99 +33,183 @@
     ctx.restore();
   }
 
-  function drawHud(ctx,remaining,progress,level) {
-    const sign=ui("levelSign");
-    if (sign) {
-      drawImageFit(ctx,sign,85,8,220,73);
-      if (Number(level)!==5) {
-        // Cover the baked sample title and keep later levels dynamic.
-        rr(ctx,130,31,130,40,12,"rgba(173,92,38,.96)",null);
-        drawNumber(ctx,"第"+level+"关",195,51,25,"#ffe66f","#713312",5);
-      }
-    } else {
-      rr(ctx,118,26,154,60,18,"#bc7435","#703815",3);
-      drawNumber(ctx,"第"+level+"关",195,57,30,"#ffe26a","#713312",5);
-    }
-
-    const remain=ui("remainPanel");
-    if (remain) drawImageFit(ctx,remain,8,603,94,107);
-    else rr(ctx,14,607,82,96,16,"#824821","#5b2d14",3);
-
-    const progressPanel=ui("progressPanel");
-    if (progressPanel) drawImageFit(ctx,progressPanel,288,603,94,107);
-    else rr(ctx,294,607,82,96,16,"#824821","#5b2d14",3);
-
-    drawNumber(ctx,remaining,55,676,29,"#ffd938","#653316",4.5);
-    drawNumber(ctx,progress+"%",335,681,26,"#fffdf4","#633317",4);
-  }
-
-  function drawTrayBase(ctx,now,dangerUntil) {
-    const danger=now<dangerUntil;
-    const shake=danger ? Math.sin(now*.09)*4 : 0;
-    const tray=ui("tray");
+  function drawBackground(ctx) {
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,"#38b8f4");
+    g.addColorStop(.55,"#8edcf5");
+    g.addColorStop(.78,"#dff8df");
+    g.addColorStop(1,"#75c84c");
+    ctx.fillStyle=g;
+    ctx.fillRect(0,0,W,H);
 
     ctx.save();
-    ctx.translate(shake,0);
-    if (danger) {
-      ctx.shadowColor="rgba(255,66,47,.78)";
-      ctx.shadowBlur=18;
+    ctx.globalAlpha=.62;
+    ctx.fillStyle="#fff";
+    [[48,184,47,18],[342,230,55,20],[103,335,36,14]].forEach(([x,y,rx,ry])=>{
+      ctx.beginPath(); ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2); ctx.fill();
+    });
+    ctx.restore();
+
+    ctx.fillStyle="#67bc43";
+    ctx.beginPath();
+    ctx.moveTo(0,705);
+    ctx.quadraticCurveTo(75,675,148,707);
+    ctx.quadraticCurveTo(245,743,390,694);
+    ctx.lineTo(390,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle="#4aa137";
+    ctx.beginPath();
+    ctx.moveTo(0,742);
+    ctx.quadraticCurveTo(95,717,190,746);
+    ctx.quadraticCurveTo(290,770,390,734);
+    ctx.lineTo(390,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
+
+    if (!window.DEBUG_GAME.disableDecorations) {
+      ctx.save();
+      ctx.globalAlpha=.75;
+      for (const [x,y,s] of [[22,679,1],[367,665,.9],[188,720,.7]]) {
+        ctx.save();
+        ctx.translate(x,y); ctx.scale(s,s);
+        ctx.fillStyle="#2f8c38";
+        ctx.beginPath(); ctx.ellipse(-8,0,10,22,-.55,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(8,0,10,22,.55,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawStructures() {
+    // V2.4: removed the old ramps, chute and tray entirely.
+  }
+
+  function drawHud(ctx,remaining,progress,level) {
+    rr(ctx,126,16,138,52,18,"rgba(126,76,35,.92)","#6d3b1c",3);
+    drawNumber(ctx,"第"+level+"关",195,42,25,"#ffe36a","#713312",4.5);
+
+    rr(ctx,12,86,88,44,15,"rgba(87,60,31,.82)","rgba(255,242,194,.55)",2);
+    rr(ctx,290,86,88,44,15,"rgba(87,60,31,.82)","rgba(255,242,194,.55)",2);
+    ctx.save();
+    ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.font='800 11px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillStyle="#fff1c4";
+    ctx.fillText("剩余",56,99); ctx.fillText("进度",334,99);
+    ctx.restore();
+    drawNumber(ctx,remaining,56,117,19,"#ffd843","#653316",3);
+    drawNumber(ctx,progress+"%",334,117,17,"#fffdf4","#633317",3);
+  }
+
+  function monkeyPose(now, index, fx) {
+    if (!fx || fx.bowMonkey !== index || now >= fx.bowUntil) return {rot:0, dy:0};
+    const duration=C.monkeys.bowDuration;
+    const t=Math.max(0,Math.min(1,(now-fx.bowStart)/duration));
+    const wave=Math.sin(t*Math.PI);
+    return {rot:(index===0?1:-1)*wave*.17, dy:wave*7};
+  }
+
+  function drawMonkey(ctx,now,index,fx) {
+    const cx=C.monkeys.centers[index];
+    const baseY=C.monkeys.groundY-9;
+    const pose=monkeyPose(now,index,fx);
+    const worried=fx && now<fx.dangerUntil;
+    const handA=index*2;
+    const handB=handA+1;
+
+    ctx.save();
+    ctx.translate(cx,baseY); ctx.rotate(pose.rot); ctx.translate(-cx,-baseY+pose.dy);
+
+    ctx.fillStyle="rgba(45,55,34,.20)";
+    ctx.beginPath(); ctx.ellipse(cx,baseY+18,49,12,0,0,Math.PI*2); ctx.fill();
+
+    ctx.strokeStyle="#8b542d"; ctx.lineWidth=11; ctx.lineCap="round";
+    ctx.beginPath();
+    ctx.moveTo(cx+(index===0?23:-23),baseY-18);
+    ctx.quadraticCurveTo(cx+(index===0?62:-62),baseY-40,cx+(index===0?48:-48),baseY-76);
+    ctx.stroke();
+
+    ctx.strokeStyle="#75421f"; ctx.lineWidth=14;
+    ctx.beginPath(); ctx.moveTo(cx-17,baseY-6); ctx.lineTo(cx-22,baseY+15); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx+17,baseY-6); ctx.lineTo(cx+22,baseY+15); ctx.stroke();
+
+    const body=ctx.createLinearGradient(cx,baseY-92,cx,baseY);
+    body.addColorStop(0,"#a86a37"); body.addColorStop(1,"#75411f");
+    ctx.fillStyle=body;
+    ctx.beginPath(); ctx.ellipse(cx,baseY-43,38,52,0,0,Math.PI*2); ctx.fill();
+
+    const shoulderY=baseY-58;
+    const handY=C.monkeys.handY;
+    [handA,handB].forEach((h,local)=>{
+      const hx=C.monkeys.hands[h];
+      ctx.strokeStyle="#8b542d"; ctx.lineWidth=14; ctx.lineCap="round";
+      ctx.beginPath();
+      ctx.moveTo(cx+(local===0?-24:24),shoulderY);
+      ctx.quadraticCurveTo((cx+hx)/2,shoulderY-8,hx,handY);
+      ctx.stroke();
+      ctx.fillStyle="#d49a62";
+      ctx.beginPath(); ctx.arc(hx,handY,10.5,0,Math.PI*2); ctx.fill();
+    });
+
+    ctx.fillStyle="#8b542d";
+    ctx.beginPath(); ctx.arc(cx-29,baseY-103,17,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx+29,baseY-103,17,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#b87943";
+    ctx.beginPath(); ctx.arc(cx,baseY-102,36,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#e8bd88";
+    ctx.beginPath(); ctx.ellipse(cx,baseY-96,25,24,0,0,Math.PI*2); ctx.fill();
+
+    ctx.strokeStyle="#332116"; ctx.lineWidth=3; ctx.lineCap="round";
+    if (worried) {
+      ctx.beginPath(); ctx.moveTo(cx-15,baseY-108); ctx.lineTo(cx-6,baseY-104); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx+6,baseY-104); ctx.lineTo(cx+15,baseY-108); ctx.stroke();
     } else {
-      ctx.shadowColor="rgba(69,38,16,.28)";
-      ctx.shadowBlur=9;
-      ctx.shadowOffsetY=4;
+      ctx.fillStyle="#332116";
+      ctx.beginPath(); ctx.arc(cx-10,baseY-106,3,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx+10,baseY-106,3,0,Math.PI*2); ctx.fill();
     }
 
-    if (tray) {
-      drawImageFit(ctx,tray,103,600,184,147);
-    } else {
-      const box=C.visual.tray;
-      const grad=ctx.createLinearGradient(0,box.y-box.h/2,0,box.y+box.h/2);
-      grad.addColorStop(0,"#e6ab63"); grad.addColorStop(1,"#874723");
-      rr(ctx,box.x-box.w/2,box.y-box.h/2,box.w,box.h,16,grad,"#5b2e17",3);
-      C.tray.slots.forEach(x=>{
-        ctx.fillStyle="#4a2b1d"; ctx.beginPath(); ctx.arc(x,C.tray.y,12,0,Math.PI*2); ctx.fill();
-        ctx.strokeStyle="#d79d50"; ctx.lineWidth=1.5; ctx.stroke();
-      });
-    }
+    ctx.strokeStyle="#5b301e"; ctx.lineWidth=3;
+    ctx.beginPath();
+    if (worried) ctx.arc(cx,baseY-88,7,Math.PI,Math.PI*2);
+    else ctx.arc(cx,baseY-93,8,.12*Math.PI,.88*Math.PI);
+    ctx.stroke();
 
     ctx.restore();
   }
 
-  function drawBottomDecor(ctx) {
-    // The polished garden background already contains the ground, leaves and ramp decoration.
-  }
+  function drawMonkeys(ctx,now,fx) {
+    drawMonkey(ctx,now,0,fx);
+    drawMonkey(ctx,now,1,fx);
 
-  function drawDebug(ctx) {
-    const D=window.DEBUG_GAME;
-    if(D.showRampCollider){
+    if (fx && now < fx.thanksUntil && fx.bowMonkey >= 0) {
+      const cx=C.monkeys.centers[fx.bowMonkey];
+      const bubbleY=C.monkeys.handY-86;
+      rr(ctx,cx-34,bubbleY-17,68,30,14,"rgba(255,255,255,.94)","rgba(112,73,40,.28)",1.5);
       ctx.save();
-      ctx.strokeStyle="rgba(255,45,45,.92)";
-      ctx.lineWidth=2;
-      [C.geometry.leftRamp,C.geometry.rightRamp].forEach(g=>{
-        ctx.save();
-        ctx.translate(g.x,g.y); ctx.rotate(g.angle);
-        ctx.strokeRect(-g.length/2,-g.thickness/2,g.length,g.thickness);
-        ctx.restore();
+      ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.font='900 14px "PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.fillStyle="#7a4b27";
+      ctx.fillText("谢谢！",cx,bubbleY-2);
+      ctx.restore();
+    }
+
+    if (window.DEBUG_GAME.showHandNumbers) {
+      ctx.save(); ctx.font='bold 12px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      C.monkeys.hands.forEach((x,i)=>{
+        ctx.fillStyle='rgba(30,30,30,.75)'; ctx.beginPath(); ctx.arc(x,C.monkeys.handY-25,10,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#fff'; ctx.fillText(String(i+1),x,C.monkeys.handY-25);
       });
       ctx.restore();
     }
-    if(D.showCaptureZone){
-      const z=C.geometry.chute;
-      ctx.save();
-      ctx.fillStyle="rgba(46,255,89,.18)";
-      ctx.strokeStyle="rgba(0,210,60,.9)";
-      ctx.lineWidth=2;
-      ctx.fillRect(z.xMin,z.captureY,z.xMax-z.xMin,45);
-      ctx.strokeRect(z.xMin,z.captureY,z.xMax-z.xMin,45);
-      ctx.restore();
-    }
   }
+
+  function drawBottomDecor() {}
+  function drawDebug() {}
 
   window.GameRenderer={
     drawBackground,
     drawStructures,
     drawHud,
-    drawTrayBase,
+    drawMonkeys,
     drawBottomDecor,
     drawDebug
   };
